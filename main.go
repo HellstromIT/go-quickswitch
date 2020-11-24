@@ -22,9 +22,7 @@ func main() {
 
 	walkDirectories(&files)
 
-	cwd := getCwd()
-
-	directory := files.getDirectory(cwd)
+	directory := files.getDirectory(getCwd())
 
 	fmt.Println(directory)
 }
