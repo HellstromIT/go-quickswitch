@@ -19,7 +19,7 @@ func (f *FileList) addDirectory(directory string) {
 
 func (f *FileList) createBaseConfig(filename string) {
 
-	(*f).addDirectory(filepath.Dir(filename))
+	(*f).addDirectory(getCwd())
 
 	errMkdir := os.MkdirAll(filepath.Dir(filename), 0755)
 	if errMkdir != nil {
@@ -42,16 +42,26 @@ func (f *FileList) saveConfigToFile(filename string) error {
 func readConfigFromFile(filename string) FileList {
 	var filelist FileList
 
-	bs, err := ioutil.ReadFile(filename)
-	if err != nil {
-		filelist.createBaseConfig(filename)
-	}
+	if _, err := os.Stat(filename); err == nil {
+		bs, err := ioutil.ReadFile(filename)
+		if err != nil {
+			fmt.Println("Error:", err)
+			os.Exit(1)
+		}
 
-	jsonErr := json.Unmarshal(bs, &filelist)
-	if jsonErr != nil {
-		fmt.Println("Error:", jsonErr)
-		fmt.Println("This could be because of first run. Run go-quickswitch -add=/path/to/dir to add you're first directory")
-		os.Exit(1)
+		jsonErr := json.Unmarshal(bs, &filelist)
+		fmt.Println(jsonErr)
+		if jsonErr != nil {
+			fmt.Println("Error:", jsonErr)
+			os.Exit(1)
+		}
+	} else if os.IsNotExist(err) {
+		filelist.createBaseConfig(filename)
+		fmt.Printf("Creating configuration at:\n   %v\n", filename)
+		fmt.Println("Configuration created. Re-run command to search")
+		os.Exit(0)
+	} else {
+		fmt.Println("Error: Most likely .config/quickswitch is a file not a dir")
 	}
 
 	return filelist
