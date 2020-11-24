@@ -8,7 +8,7 @@ import (
 
 func main() {
 
-	configfile := getConfigFile(".config/quickswitch.json")
+	configfile := getConfigFile("quickswitch/quickswitch.json")
 
 	files := readConfigFromFile(configfile)
 
@@ -22,9 +22,7 @@ func main() {
 
 	walkDirectories(&files)
 
-	cwd := getCwd()
-
-	directory := files.getDirectory(cwd)
+	directory := files.getDirectory(getCwd())
 
 	fmt.Println(directory)
 }

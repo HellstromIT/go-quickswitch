@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/mitchellh/go-homedir"
 )
 
 func getConfigFile(f string) string {
-	home, err := homedir.Dir()
+	home, err := os.UserConfigDir()
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
