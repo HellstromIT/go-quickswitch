@@ -27,7 +27,10 @@ func walkDirectories(f *FileList) {
 		}
 
 		for _, v := range names {
-			f.addDirectory(filepath.Join(dir, v))
+			info, _ := os.Stat(filepath.Join(dir, v))
+			if info.IsDir() {
+				f.addDirectory(filepath.Join(dir, v))
+			}
 		}
 	}
 }
