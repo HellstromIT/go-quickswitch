@@ -3,26 +3,31 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 )
 
 func main() {
 
-	configfile := getConfigFile("quickswitch/quickswitch.json")
+	configfile := getConfigFile("quickswitch/quickswitch2.json")
 
 	files := readConfigFromFile(configfile)
 
 	addPtr := flag.String("add", "", "add path to search")
+	removePtr := flag.String("remove", "", "remove path from search")
 	flag.Parse()
+
 	if *addPtr != "" {
 		files.addDirectory(*addPtr)
 		files.saveConfigToFile(configfile)
-		os.Exit(0)
+		fmt.Printf("Directory %v added to search", *addPtr)
+	} else if *removePtr != "" {
+		files.removeDirectory(*removePtr)
+		files.saveConfigToFile(configfile)
+		fmt.Printf("Directory %v removed from search", *removePtr)
+	} else {
+		walkDirectories(&files)
+
+		directory := files.getDirectory(getCwd())
+
+		fmt.Println(directory)
 	}
-
-	walkDirectories(&files)
-
-	directory := files.getDirectory(getCwd())
-
-	fmt.Println(directory)
 }
