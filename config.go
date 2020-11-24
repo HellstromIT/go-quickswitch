@@ -17,6 +17,14 @@ func (f *FileList) addDirectory(directory string) {
 	f.Directories = append(f.Directories, directory)
 }
 
+func (f *FileList) removeDirectory(directory string) {
+	for i, v := range f.Directories {
+		if v == directory {
+			f.Directories = append(f.Directories[:i], f.Directories[i+1:]...)
+		}
+	}
+}
+
 func (f *FileList) createBaseConfig(filename string) {
 
 	(*f).addDirectory(getCwd())
@@ -33,7 +41,7 @@ func (f *FileList) createBaseConfig(filename string) {
 func (f *FileList) saveConfigToFile(filename string) error {
 	bs, err := json.MarshalIndent(*f, "", "  ")
 	if err != nil {
-		fmt.Println("Error", err)
+		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 	return ioutil.WriteFile(filename, bs, 0644)
@@ -50,11 +58,11 @@ func readConfigFromFile(filename string) FileList {
 		}
 
 		jsonErr := json.Unmarshal(bs, &filelist)
-		fmt.Println(jsonErr)
 		if jsonErr != nil {
 			fmt.Println("Error:", jsonErr)
 			os.Exit(1)
 		}
+		return filelist
 	} else if os.IsNotExist(err) {
 		filelist.createBaseConfig(filename)
 		fmt.Printf("Creating configuration at:\n   %v\n", filename)
