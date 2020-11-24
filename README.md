@@ -83,13 +83,33 @@ Create a function in $HOME/.config/fish/functions/qq.fish
 
 ```
 function qq
-    set directory (go-quickswitch)
-    if set -q directory
-        cd $directory
+    if [ -n "$argv[1]" ]
+        switch "$argv[1]"
+            case add
+                go-quickswitch -add=$argv[2]
+            case remove
+                go-quickswitch -remove=$argv[2]
+        end
     else
-        echo
+        set directory (go-quickswitch)
+        if set -q directory
+            cd $directory
+        else
+            echo
+        end
     end
 end
+
+function __fish_qq_needs_command
+  set cmd (commandline -opc)
+  if [ (count $cmd) -eq 1 -a $cmd[1] = 'qq' ]
+    return 0
+  end
+  return 1
+end
+
+complete -f -c qq -n '__fish_qq_needs_command' -a add
+complete -f -c qq -n '__fish_qq_needs_command' -a delete
 ``` 
 
 ### zsh
