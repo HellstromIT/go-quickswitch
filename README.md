@@ -4,54 +4,77 @@ Go Version of QuickSwitch (https://github.com/HellstromIT/quickswitch)
 
 - [go-quickswitch](#go-quickswitch)
 - [About](#about)
+  - [WHY?](#why)
 - [Installation](#installation)
-  - [Linux:](#linux)
-  - [Windows:](#windows)
-  - [Mac:](#mac)
-  - [Bash](#bash)
-  - [Fish](#fish)
-  - [zsh](#zsh)
-  - [powershell](#powershell)
-
-
+  - [Download Packages](#download-packages)
+  - [Create Configuration file](#create-configuration-file)
+  - [Add first search path](#add-first-search-path)
+  - [Add shell functions](#add-shell-functions)
+    - [Bash](#bash)
+    - [Fish](#fish)
+    - [zsh](#zsh)
+    - [powershell](#powershell)
 
 # About
 
+## WHY?
+The reasoning behind this package is the following. I've realised that I'm constantly switching between different git repositories on a normal day. To speed up the process of switching I wanted a tool that implemented would allow me to fuzzy search a set of directories containing git repositories. And that's how the idea behind quickswitch was born!:) 
+
 # Installation
+
+## Download Packages
 Download the latest release from https://github.com/HellstromIT/go-quickswitch/releases, unpack it and install to your path:
 
-## Linux:
+Linux:
 ```
 tar -xvf go-quickswitch_v0.1.0_linux_amd64.tar.gz
 sudo cp go-quickswitch /usr/local/bin/
 ```
 
+Mac:
+(TBD)
+
+Windows:
+(TBD)
+
+## Create Configuration file
+
+Linux:
 Create configuration file (this is a bit convoluted at the moment. Will be fixed in the future):
 
 ```
 echo '{"Directories": []}' > ~/.config/quickswitch.json
 ```
 
-## Windows:
+Windows:
 (TBD)
 
-## Mac:
+Mac:
 (TBD)
 
+
+## Add first search path
 There's no default search directories out of the box so to add a directory you wish to include run:
 
+Linux/Mac:
 ```
 go-quickswitch -add=/path/to/search/directory
 ```
 
+Windows:
+```
+go-quickswitch.exe -add=/path/to/search/directory
+```
 
 The command will only search one level deep so if you have multiple levels that you wish to search you need to add them one at a time.
 
+
+## Add shell functions
 In order for the command to work correctly you will also need to create a function in your shell. The below functions assume that you want the command to be `qq`. 
 
 After adding the relevant function restart your shell.
 
-## Bash 
+### Bash 
 Add the following to your $HOME/.bashrc or in $HOME/.bash_functions.d/qq.sh
 
 ```
@@ -66,7 +89,7 @@ qq () {
 }
 ```
 
-## Fish
+### Fish
 Create a function in $HOME/.config/fish/functions/qq.fish
 
 ```
@@ -80,7 +103,7 @@ function qq
 end
 ``` 
 
-## zsh
+### zsh
 Create a function in $HOME/.zshrc
 
 ```
@@ -95,7 +118,7 @@ qq () {
 }
 ```
 
-## powershell
+### powershell
 (TBD)
 
 After adding the functions restart your shell and press qq<enter> to use the tool.
