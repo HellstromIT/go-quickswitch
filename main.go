@@ -1,51 +1,30 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
-	"github.com/ktr0731/go-fuzzyfinder"
-	"github.com/spf13/viper"
 )
 
-func getDirectories(dir string) []string {
-	file, err := os.Open(dir)
-	var full_path_dirs []string
-	if err != nil {
-		fmt.Printf("ERROR: %s", err)
-	}
-	names, err := file.Readdirnames(0)
-	if err != nil {
-		fmt.Printf("ERROR: %s", err)
-	}
-	for _, v := range names {
-		full_path_dirs = append(full_path_dirs, filepath.Join(dir, v))
-	}
-	return full_path_dirs
-}
-
 func main() {
-	viper.SetConfigName("config")
-	viper.SetConfigType("json")
-	viper.AddConfigPath("$HOME/.config/quickswitch/")
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+
+	configfile := getConfigFile(".config/quickswitch.json")
+
+	files := readConfigFromFile(configfile)
+
+	addPtr := flag.String("add", "", "add path to search")
+	flag.Parse()
+	if *addPtr != "" {
+		files.addDirectory(*addPtr)
+		files.saveConfigToFile(configfile)
+		os.Exit(0)
 	}
 
-	dir := viper.GetStringSlice("Directories")
+	walkDirectories(&files)
 
-	var directories []string
+	cwd := getCwd()
 
-	for _, v := range dir {
-		for _, v := range getDirectories(v) {
-			//fmt.Println(v)
-			directories = append(directories, v)
-		}
-	}
+	directory := files.getDirectory(cwd)
 
-	idx, _ := fuzzyfinder.Find(directories, func(i int) string {
-		return directories[i]
-	})
-	fmt.Println(directories[idx])
+	fmt.Println(directory)
 }
