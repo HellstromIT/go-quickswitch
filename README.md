@@ -7,7 +7,7 @@ Go Version of QuickSwitch (https://github.com/HellstromIT/quickswitch)
   - [WHY?](#why)
 - [Installation](#installation)
   - [Download Packages](#download-packages)
-  - [Create Configuration file](#create-configuration-file)
+  - [First run](#first-run)
   - [Add first search path](#add-first-search-path)
   - [Add shell functions](#add-shell-functions)
     - [Bash](#bash)
@@ -37,20 +37,9 @@ Mac:
 Windows:
 (TBD)
 
-## Create Configuration file
+## First run
 
-Linux:
-Create configuration file (this is a bit convoluted at the moment. Will be fixed in the future):
-
-```
-echo '{"Directories": []}' > ~/.config/quickswitch.json
-```
-
-Windows:
-(TBD)
-
-Mac:
-(TBD)
+On first run the configuration file will be generated with the current working directory added as a search path. The program will exit telling you to re-run to search and also indicating where the config file is located.  
 
 
 ## Add first search path
