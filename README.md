@@ -68,7 +68,7 @@ Add the following to your $HOME/.bashrc or in $HOME/.bash_functions.d/qq.sh
 
 ```
 qq () {
-  directory=$(qs)
+  directory=$(go-quickswitch)
   if [ -z "$directory" ]
   then
     echo
@@ -83,7 +83,7 @@ Create a function in $HOME/.config/fish/functions/qq.fish
 
 ```
 function qq
-    set directory (qs)
+    set directory (go-quickswitch)
     if set -q directory
         cd $directory
     else
@@ -97,7 +97,7 @@ Create a function in $HOME/.zshrc
 
 ```
 qq () {
-  directory=$(qs)
+  directory=$(go-quickswitch)
   if [ -z "$directory" ]
   then
     echo
