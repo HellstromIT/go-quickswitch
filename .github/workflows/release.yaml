@@ -5,12 +5,29 @@ on:
     types: [created]
 
 jobs:
-  releases:
+  releases-linux:
     name: Release Go Binary
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goos: [linux, windows, darwin]
+        goos: [linux]
+        goarch: ["386", amd64, arm64, arm]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: wangyoucao577/go-release-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        goos: ${{ matrix.goos }}
+        goarch: ${{ matrix.goarch }}
+        goversion: "https://golang.org/dl/go1.15.5.linux-amd64.tar.gz"
+        binary_name: "go-quickswitch"
+        extra_files: LICENSE README.md
+  release-darwin:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [darwin]
         goarch: ["386", amd64]
     steps:
     - uses: actions/checkout@v2
@@ -22,13 +39,13 @@ jobs:
         goversion: "https://golang.org/dl/go1.15.5.linux-amd64.tar.gz"
         binary_name: "go-quickswitch"
         extra_files: LICENSE README.md
-  release-arm:
+  releases-windows:
     name: Release Go Binary
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goos: [linux]
-        goarch: [arm, arm64]
+        goos: [windows]
+        goarch: ["386", amd64, arm]
     steps:
     - uses: actions/checkout@v2
     - uses: wangyoucao577/go-release-action@master
