@@ -8,7 +8,7 @@ import (
 
 func main() {
 
-	configfile := getConfigFile(".config/quickswitch.json")
+	configfile := getConfigFile("quickswitch/quickswitch.json")
 
 	files := readConfigFromFile(configfile)
 
