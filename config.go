@@ -8,17 +8,27 @@ import (
 	"path/filepath"
 )
 
-// FileList Holds the configure paths to search
+// FileList Holds the directories to search
 type FileList struct {
-	Directories []string
+	Directories []DirectoryConf
 }
 
-func (f *FileList) addDirectory(directory string) {
-	f.Directories = append(f.Directories, directory)
+// DirectoryConf Holds configuration for each directory
+type DirectoryConf struct {
+	Directory string
+	Git       bool
+}
+
+func (f *FileList) addDirectory(d string, git bool) {
+	newDirectory := DirectoryConf{
+		Directory: d,
+		Git:       git,
+	}
+	f.Directories = append(f.Directories, newDirectory)
 }
 
 func (f *FileList) removeDirectory(directory string) {
-	i, found := findInSlice(f.Directories, directory)
+	i, found := findInDirectoryConf(f.Directories, directory)
 	if !found {
 		fmt.Println("Directory not found in config. Make sure you're using the exact path")
 		os.Exit(1)
@@ -28,7 +38,7 @@ func (f *FileList) removeDirectory(directory string) {
 
 func (f *FileList) createBaseConfig(filename string) {
 
-	(*f).addDirectory(getCwd())
+	(*f).addDirectory(getCwd(), false)
 
 	errMkdir := os.MkdirAll(filepath.Dir(filename), 0755)
 	if errMkdir != nil {

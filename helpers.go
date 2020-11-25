@@ -14,6 +14,15 @@ func getConfigFile(f string) string {
 	return filepath.Join(home, f)
 }
 
+func findInDirectoryConf(slice []DirectoryConf, val string) (int, bool) {
+	for i, item := range slice {
+		if item.Directory == val {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
 func findInSlice(slice []string, val string) (int, bool) {
 	for i, item := range slice {
 		if item == val {
@@ -46,8 +55,8 @@ func walkDirectories(f *FileList) FileList {
 	var foundDir FileList
 
 	for _, dir := range f.Directories {
-		foundDir.addDirectory(dir)
-		file, err := os.Open(dir)
+		foundDir.addDirectory(dir.Directory, false)
+		file, err := os.Open(dir.Directory)
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
@@ -58,9 +67,9 @@ func walkDirectories(f *FileList) FileList {
 		}
 
 		for _, v := range names {
-			info, _ := os.Stat(filepath.Join(dir, v))
-			if info.IsDir() && isGitDirectory(filepath.Join(dir, v)) {
-				foundDir.addDirectory(filepath.Join(dir, v))
+			info, _ := os.Stat(filepath.Join(dir.Directory, v))
+			if info.IsDir() && isGitDirectory(filepath.Join(dir.Directory, v)) {
+				foundDir.addDirectory(filepath.Join(dir.Directory, v), false)
 			}
 		}
 	}
