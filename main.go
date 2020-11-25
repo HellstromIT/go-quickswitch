@@ -24,10 +24,9 @@ func main() {
 		files.saveConfigToFile(configfile)
 		fmt.Printf("Directory %v removed from search", *removePtr)
 	} else {
-		walkDirectories(&files)
 
-		directory := files.getDirectory(getCwd())
+		foundDirectories := walkDirectories(&files)
 
-		fmt.Println(directory)
+		fmt.Println(foundDirectories.getDirectory(getCwd()))
 	}
 }

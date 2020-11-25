@@ -18,11 +18,12 @@ func (f *FileList) addDirectory(directory string) {
 }
 
 func (f *FileList) removeDirectory(directory string) {
-	for i, v := range f.Directories {
-		if v == directory {
-			f.Directories = append(f.Directories[:i], f.Directories[i+1:]...)
-		}
+	i, found := findInSlice(f.Directories, directory)
+	if !found {
+		fmt.Println("Directory not found in config. Make sure you're using the exact path")
+		os.Exit(1)
 	}
+	f.Directories = append(f.Directories[:i], f.Directories[i+1:]...)
 }
 
 func (f *FileList) createBaseConfig(filename string) {
