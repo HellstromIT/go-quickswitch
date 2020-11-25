@@ -32,6 +32,7 @@ func main() {
 				files.addDirectory(addCmd.Args()[0], *addGit)
 				files.saveConfigToFile(configfile)
 				fmt.Printf("Directory %v added to search", addCmd.Args()[0])
+				os.Exit(0)
 			}
 		case "remove":
 			removeCmd.Parse(os.Args[2:])
@@ -40,6 +41,7 @@ func main() {
 					files.removeDirectory(removeCmd.Args()[0])
 					files.saveConfigToFile(configfile)
 					fmt.Printf("Directory %v removed from search", removeCmd.Args()[0])
+					os.Exit(0)
 				}
 			}
 			fmt.Println("Too many arguments")

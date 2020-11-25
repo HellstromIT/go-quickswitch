@@ -56,6 +56,9 @@ func walkDirectories(f *FileList) FileList {
 
 	for _, dir := range f.Directories {
 		foundDir.addDirectory(dir.Directory, false)
+		if isGitDirectory(dir.Directory) {
+			continue
+		}
 		file, err := os.Open(dir.Directory)
 		if err != nil {
 			fmt.Println("Error:", err)
@@ -67,9 +70,16 @@ func walkDirectories(f *FileList) FileList {
 		}
 
 		for _, v := range names {
+			var mergeDir FileList
+			mergeDir.addDirectory(filepath.Join(dir.Directory, v), false)
 			info, _ := os.Stat(filepath.Join(dir.Directory, v))
 			if info.IsDir() && isGitDirectory(filepath.Join(dir.Directory, v)) {
 				foundDir.addDirectory(filepath.Join(dir.Directory, v), false)
+			} else if info.IsDir() {
+				subDir := walkDirectories(&mergeDir)
+				for _, d := range subDir.Directories {
+					foundDir.addDirectory(d.Directory, false)
+				}
 			}
 		}
 	}
