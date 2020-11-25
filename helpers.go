@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 func getConfigFile(f string) string {
@@ -58,7 +57,6 @@ func isGitDirectory(d string) bool {
 }
 
 func walkDirectories2(f FileList, s int, e int) FileList {
-	defer timeTrack(time.Now(), "walkDirectories2")
 	var foundDir FileList
 
 	for s < e {
@@ -91,7 +89,6 @@ func walkDirectories2(f FileList, s int, e int) FileList {
 }
 
 func walkDirectories(f *FileList) FileList {
-	defer timeTrack(time.Now(), "walkDirectories")
 
 	var foundDir FileList
 
