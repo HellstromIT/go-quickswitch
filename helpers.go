@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 func getConfigFile(f string) string {
@@ -33,25 +34,65 @@ func findInSlice(slice []string, val string) (int, bool) {
 }
 
 func isGitDirectory(d string) bool {
-	file, err := os.Open(d)
-	if err != nil {
-		fmt.Println("Error:", err)
+	//fmt.Println(d)
+	info, _ := os.Stat(d)
+	if info.IsDir() {
+		file, err := os.Open(d)
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+
+		names, err := file.Readdirnames(0)
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+
+		_, found := findInSlice(names, ".git")
+		if !found {
+			return false
+		}
+		return true
 	}
 
-	names, err := file.Readdirnames(0)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
+	return false
+}
 
-	_, found := findInSlice(names, ".git")
-	if !found {
-		return false
-	}
+func walkDirectories2(f FileList, s int, e int) FileList {
+	defer timeTrack(time.Now(), "walkDirectories2")
+	var foundDir FileList
 
-	return true
+	for s < e {
+		s++
+		for _, dir := range f.Directories {
+			info, _ := os.Stat(dir.Directory)
+			if info.IsDir() && isGitDirectory(dir.Directory) {
+				foundDir.addDirectory(dir.Directory, false)
+			} else if info.IsDir() {
+				file, err := os.Open(dir.Directory)
+				if err != nil {
+					fmt.Println("Error:", err)
+				}
+				names, err := file.Readdirnames(0)
+				if err != nil {
+					fmt.Println("Error:", err)
+				}
+				for _, v := range names {
+					var recurseDir FileList
+					recurseDir.addDirectory(filepath.Join(dir.Directory, v), false)
+					found := walkDirectories2(recurseDir, 0, 1)
+					for _, dir := range found.Directories {
+						foundDir.addDirectory(dir.Directory, false)
+					}
+				}
+			}
+		}
+	}
+	return foundDir
 }
 
 func walkDirectories(f *FileList) FileList {
+	defer timeTrack(time.Now(), "walkDirectories")
+
 	var foundDir FileList
 
 	for _, dir := range f.Directories {
