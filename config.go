@@ -6,11 +6,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 // FileList Holds the directories to search
 type FileList struct {
 	Directories []DirectoryConf
+	sync.Mutex
 }
 
 // DirectoryConf Holds configuration for each directory
@@ -24,7 +26,10 @@ func (f *FileList) addDirectory(d string, git bool) {
 		Directory: d,
 		Git:       git,
 	}
-	f.Directories = append(f.Directories, newDirectory)
+	_, found := findInDirectoryConf(f.Directories, d)
+	if !found {
+		f.Directories = append(f.Directories, newDirectory)
+	}
 }
 
 func (f *FileList) removeDirectory(directory string) {

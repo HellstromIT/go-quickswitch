@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 )
+
+var wg sync.WaitGroup
 
 func getConfigFile(f string) string {
 	home, err := os.UserConfigDir()
@@ -54,6 +57,45 @@ func isGitDirectory(d string) bool {
 	}
 
 	return false
+}
+
+func walkDir(dir string, d *FileList) {
+	defer wg.Done()
+
+	walk := func(path string, f os.FileInfo, err error) error {
+		if f.IsDir() && isGitDirectory(path) {
+			(*d).Lock()
+			(*d).addDirectory(path, false)
+			(*d).Unlock()
+		} else if f.IsDir() && path != dir {
+			file, err := os.Open(path)
+			if err != nil {
+				fmt.Println("Error:", err)
+			}
+			names, err := file.Readdirnames(0)
+			file.Close()
+			if err != nil {
+				fmt.Println("Error:", err)
+			}
+			for _, v := range names {
+				wg.Add(1)
+				go walkDir(filepath.Join(path, v), d)
+			}
+			return filepath.SkipDir
+		}
+		return nil
+	}
+
+	filepath.Walk(dir, walk)
+}
+
+func walk(f FileList, d *FileList) FileList {
+	for _, dir := range f.Directories {
+		wg.Add(1)
+		walkDir(dir.Directory, d)
+	}
+	wg.Wait()
+	return (*d)
 }
 
 func walkDirectories2(f FileList, s int, e int) FileList {

@@ -12,7 +12,6 @@ func main() {
 	files := readConfigFromFile(configfile)
 
 	addCmd := flag.NewFlagSet("add", flag.ExitOnError)
-	//addFile := addCmd.String("path", "", "Full path to add")
 	addGit := addCmd.Bool("git", false, "Should recursive search for git repo be enables")
 	removeCmd := flag.NewFlagSet("remove", flag.ExitOnError)
 	flag.Usage = func() {
@@ -47,7 +46,12 @@ func main() {
 		default:
 		}
 	}
-	foundDirectories := walkDirectories2(files, 0, len(files.Directories)+1)
-	fmt.Println(foundDirectories.getDirectory(getCwd()))
+	// foundDirectories := walkDirectories2(files, 0, len(files.Directories)+1)
+	// fmt.Println(foundDirectories.getDirectory(getCwd()))
 
+	var foundDir FileList
+	walk(files, &foundDir)
+	//134/134
+	// walkDirectories2(files, 0, len(files.Directories)+1)
+	// fmt.Println(foundDir.getDirectory(getCwd()))
 }
