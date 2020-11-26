@@ -43,7 +43,7 @@ func walkDir(dir string, d *FileList) {
 		suffix := ".git"
 		if f.IsDir() && strings.HasSuffix(path, suffix) {
 			(*d).Lock()
-			(*d).addDirectory(path, false)
+			(*d).addDirectory(strings.TrimSuffix(path, suffix), false)
 			(*d).Unlock()
 		} else if f.IsDir() && path != dir {
 			file, err := os.Open(path)
