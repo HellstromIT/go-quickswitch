@@ -46,12 +46,8 @@ func main() {
 		default:
 		}
 	}
-	// foundDirectories := walkDirectories2(files, 0, len(files.Directories)+1)
-	// fmt.Println(foundDirectories.getDirectory(getCwd()))
 
 	var foundDir FileList
 	walk(files, &foundDir)
-	//134/134
-	// walkDirectories2(files, 0, len(files.Directories)+1)
-	// fmt.Println(foundDir.getDirectory(getCwd()))
+	fmt.Println(foundDir.getDirectory(getCwd()))
 }
