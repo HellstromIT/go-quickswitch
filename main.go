@@ -30,6 +30,7 @@ func main() {
 			if len(addCmd.Args()) == 1 {
 				files.addDirectory(addCmd.Args()[0], *addGit, *addDepth)
 				files.saveConfigToFile(configfile)
+				walk(files)
 				fmt.Printf("Directory %v added to search", addCmd.Args()[0])
 				os.Exit(0)
 			}
@@ -39,6 +40,7 @@ func main() {
 				if removeCmd.Args()[0] != "" {
 					files.removeDirectory(removeCmd.Args()[0])
 					files.saveConfigToFile(configfile)
+					walk(files)
 					fmt.Printf("Directory %v removed from search", removeCmd.Args()[0])
 					os.Exit(0)
 				}
