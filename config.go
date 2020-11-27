@@ -21,6 +21,15 @@ type DirectoryConf struct {
 	Git       bool
 }
 
+type FoundDirectories struct {
+	directories []string
+}
+
+type Directories struct {
+	name  string
+	child []Directories
+}
+
 func (f *FileList) addDirectory(d string, git bool) {
 	newDirectory := DirectoryConf{
 		Directory: d,

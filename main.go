@@ -47,7 +47,8 @@ func main() {
 		}
 	}
 
-	var foundDir FileList
-	walk(files, &foundDir)
-	fmt.Println(foundDir.getDirectory(getCwd()))
+	foundDirs := walk(files)
+	var found FoundDirectories
+	found.flattenDirectories(foundDirs)
+	fmt.Println(found.getDirectory(getCwd()))
 }

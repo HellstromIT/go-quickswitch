@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
@@ -36,44 +35,70 @@ func findInSlice(slice []string, val string) (int, bool) {
 	return -1, false
 }
 
-func walkDir(dir string, d *FileList) {
-	defer wg.Done()
+func walkDir(p string, d Directories) Directories {
 
-	walk := func(path string, f os.FileInfo, err error) error {
-		suffix := ".git"
-		if f.IsDir() && strings.HasSuffix(path, suffix) {
-			(*d).Lock()
-			(*d).addDirectory(strings.TrimSuffix(path, suffix), false)
-			(*d).Unlock()
-		} else if f.IsDir() && path != dir {
-			file, err := os.Open(path)
-			if err != nil {
-				fmt.Println("Error:", err)
-			}
-			names, err := file.Readdirnames(0)
-			file.Close()
-			if err != nil {
-				fmt.Println("Error:", err)
-			}
-			for _, v := range names {
-				wg.Add(1)
-				go walkDir(filepath.Join(path, v), d)
-			}
-			return filepath.SkipDir
-		}
-		return nil
+	d.name = p
+	var childdir []Directories
+
+	file, err := os.Open(p)
+	if err != nil {
+		return d
 	}
+	names, err := file.Readdirnames(0)
+	if err != nil {
+		return d
+	}
+	for _, v := range names {
+		info, err := os.Stat(p + "/" + v)
+		if err != nil {
+			return d
+		}
+		if v == ".git" {
+			return d
+		} else if !info.IsDir() {
+			return d
+		}
+	}
+	for _, v := range names {
+		childPath := p + "/" + v
 
-	filepath.Walk(dir, walk)
+		var newChild Directories
+
+		childdir = append(childdir, walkDir(childPath, newChild))
+
+	}
+	d.child = childdir
+
+	return d
 }
 
-func walk(f FileList, d *FileList) FileList {
+func walk(f FileList) Directories {
+	var d Directories
+	d.name = "pseudo"
+	var childdir []Directories
+
 	for _, dir := range f.Directories {
-		wg.Add(1)
-		walkDir(dir.Directory, d)
+		var newChild Directories
+
+		childdir = append(childdir, walkDir(dir.Directory, newChild))
 	}
-	wg.Wait()
-	return (*d)
+	d.child = childdir
+
+	return d
+}
+
+func (s *FoundDirectories) flattenDirectories(d Directories) FoundDirectories {
+	if d.name != "pseudo" {
+		s.directories = append(s.directories, d.name)
+	}
+	for _, c := range d.child {
+		if c.child != nil {
+			s.flattenDirectories(c)
+		} else {
+			s.directories = append(s.directories, c.name)
+		}
+	}
+	return *s
 }
 
 func getCwd() string {
