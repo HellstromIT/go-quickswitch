@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -18,6 +16,7 @@ type FileList struct {
 type DirectoryConf struct {
 	Directory string
 	Git       bool
+	Depth     int
 }
 
 type FoundDirectories struct {
@@ -26,15 +25,17 @@ type FoundDirectories struct {
 
 type Directories struct {
 	name     string
+	depth    int
 	searched bool
 	time     time.Time
 	child    []Directories
 }
 
-func (f *FileList) addDirectory(d string, git bool) {
+func (f *FileList) addDirectory(d string, git bool, depth int) {
 	newDirectory := DirectoryConf{
 		Directory: d,
 		Git:       git,
+		Depth:     depth,
 	}
 	_, found := findInDirectoryConf(f.Directories, d)
 	if !found {
@@ -53,7 +54,7 @@ func (f *FileList) removeDirectory(directory string) {
 
 func (f *FileList) createBaseConfig(filename string) {
 
-	(*f).addDirectory(getCwd(), false)
+	(*f).addDirectory(getCwd(), false, 0)
 
 	errMkdir := os.MkdirAll(filepath.Dir(filename), 0755)
 	if errMkdir != nil {
@@ -62,41 +63,4 @@ func (f *FileList) createBaseConfig(filename string) {
 	}
 
 	f.saveConfigToFile(filename)
-}
-
-func (f *FileList) saveConfigToFile(filename string) error {
-	bs, err := json.MarshalIndent(*f, "", "  ")
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	}
-	return ioutil.WriteFile(filename, bs, 0644)
-}
-
-func readConfigFromFile(filename string) FileList {
-	var filelist FileList
-
-	if _, err := os.Stat(filename); err == nil {
-		bs, err := ioutil.ReadFile(filename)
-		if err != nil {
-			fmt.Println("Error:", err)
-			os.Exit(1)
-		}
-
-		jsonErr := json.Unmarshal(bs, &filelist)
-		if jsonErr != nil {
-			fmt.Println("Error:", jsonErr)
-			os.Exit(1)
-		}
-		return filelist
-	} else if os.IsNotExist(err) {
-		filelist.createBaseConfig(filename)
-		fmt.Printf("Creating configuration at:\n   %v\n", filename)
-		fmt.Println("Configuration created. Re-run command to search")
-		os.Exit(0)
-	} else {
-		fmt.Println("Error: Most likely .config/quickswitch is a file not a dir")
-	}
-
-	return filelist
 }

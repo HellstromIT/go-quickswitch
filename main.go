@@ -12,7 +12,8 @@ func main() {
 	files := readConfigFromFile(configfile)
 
 	addCmd := flag.NewFlagSet("add", flag.ExitOnError)
-	addGit := addCmd.Bool("git", false, "Should recursive search for git repo be enables")
+	addDepth := addCmd.Int("depth", 0, "Depth to search for directories")
+	addGit := addCmd.Bool("git", false, "Should recursive search for git repo be enabled")
 	removeCmd := flag.NewFlagSet("remove", flag.ExitOnError)
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "\nSubcommands [add, remove]\n\n")
@@ -27,7 +28,7 @@ func main() {
 		case "add":
 			addCmd.Parse(os.Args[2:])
 			if len(addCmd.Args()) == 1 {
-				files.addDirectory(addCmd.Args()[0], *addGit)
+				files.addDirectory(addCmd.Args()[0], *addGit, *addDepth)
 				files.saveConfigToFile(configfile)
 				fmt.Printf("Directory %v added to search", addCmd.Args()[0])
 				os.Exit(0)
@@ -48,6 +49,6 @@ func main() {
 	}
 
 	cache := readCacheFromFile()
-	go walk(files, cache)
+	go walk(files)
 	fmt.Println(getDirectory(cache, getCwd()))
 }

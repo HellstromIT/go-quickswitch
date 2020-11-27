@@ -36,9 +36,41 @@ func findInSlice(slice []string, val string) (int, bool) {
 	return -1, false
 }
 
-func walkDir(p string, d Directories, f *map[string]time.Time) Directories {
+func walkDir(p string, d Directories, f *map[string]time.Time, depth int, max_depth int) Directories {
 
 	d.name = p
+	d.depth = depth
+	var childdir []Directories
+
+	if d.depth < max_depth {
+		file, err := os.Open(p)
+		if err != nil {
+			return d
+		}
+		names, err := file.Readdirnames(0)
+		if err != nil {
+			return d
+		}
+		for _, v := range names {
+			childPath := p + "/" + v
+
+			var newChild Directories
+
+			childdir = append(childdir, walkDir(childPath, newChild, f, d.depth+1, max_depth))
+		}
+	}
+	d.child = childdir
+	d.searched = true
+	d.time = time.Now()
+	(*f)[p] = time.Now()
+
+	return d
+}
+
+func walkGitDir(p string, d Directories, f *map[string]time.Time, depth int) Directories {
+
+	d.name = p
+	d.depth = depth
 	var childdir []Directories
 
 	file, err := os.Open(p)
@@ -71,7 +103,7 @@ func walkDir(p string, d Directories, f *map[string]time.Time) Directories {
 
 		var newChild Directories
 
-		childdir = append(childdir, walkDir(childPath, newChild, f))
+		childdir = append(childdir, walkGitDir(childPath, newChild, f, d.depth+1))
 
 	}
 	d.child = childdir
@@ -82,15 +114,21 @@ func walkDir(p string, d Directories, f *map[string]time.Time) Directories {
 	return d
 }
 
-func walk(f FileList, flat map[string]time.Time) {
+func walk(f FileList) {
 	var d Directories
 	d.name = "pseudo"
 	var childdir []Directories
-
+	flat := make(map[string]time.Time)
 	for _, dir := range f.Directories {
-		var newChild Directories
+		if dir.Git {
+			var newChild Directories
 
-		childdir = append(childdir, walkDir(dir.Directory, newChild, &flat))
+			childdir = append(childdir, walkGitDir(dir.Directory, newChild, &flat, 0))
+		} else {
+			var newChild Directories
+
+			childdir = append(childdir, walkDir(dir.Directory, newChild, &flat, 0, dir.Depth))
+		}
 	}
 
 	saveCacheToFile(flat)
