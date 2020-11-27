@@ -47,8 +47,7 @@ func main() {
 		}
 	}
 
-	foundDirs := walk(files)
-	var found FoundDirectories
-	found.flattenDirectories(foundDirs)
-	fmt.Println(found.getDirectory(getCwd()))
+	cache := readCacheFromFile()
+	go walk(files, cache)
+	fmt.Println(getDirectory(cache, getCwd()))
 }

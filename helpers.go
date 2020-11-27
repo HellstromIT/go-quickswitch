@@ -36,7 +36,7 @@ func findInSlice(slice []string, val string) (int, bool) {
 	return -1, false
 }
 
-func walkDir(p string, d Directories) Directories {
+func walkDir(p string, d Directories, f *map[string]int64) Directories {
 
 	d.name = p
 	var childdir []Directories
@@ -55,8 +55,14 @@ func walkDir(p string, d Directories) Directories {
 			return d
 		}
 		if v == ".git" {
+			d.searched = true
+			d.time = time.Now().Unix()
+			(*f)[p] = time.Now().Unix()
 			return d
 		} else if !info.IsDir() {
+			d.searched = true
+			d.time = time.Now().Unix()
+			(*f)[p] = time.Now().Unix()
 			return d
 		}
 	}
@@ -65,17 +71,18 @@ func walkDir(p string, d Directories) Directories {
 
 		var newChild Directories
 
-		childdir = append(childdir, walkDir(childPath, newChild))
+		childdir = append(childdir, walkDir(childPath, newChild, f))
 
 	}
 	d.child = childdir
 	d.searched = true
-	d.time = time.Now()
+	d.time = time.Now().Unix()
+	(*f)[p] = time.Now().Unix()
 
 	return d
 }
 
-func walk(f FileList) Directories {
+func walk(f FileList, flat map[string]int64) {
 	var d Directories
 	d.name = "pseudo"
 	var childdir []Directories
@@ -83,25 +90,13 @@ func walk(f FileList) Directories {
 	for _, dir := range f.Directories {
 		var newChild Directories
 
-		childdir = append(childdir, walkDir(dir.Directory, newChild))
+		childdir = append(childdir, walkDir(dir.Directory, newChild, &flat))
 	}
+
+	saveCacheToFile(flat)
 	d.child = childdir
 
-	return d
-}
-
-func (s *FoundDirectories) flattenDirectories(d Directories) FoundDirectories {
-	if d.name != "pseudo" {
-		s.directories = append(s.directories, d.name)
-	}
-	for _, c := range d.child {
-		if c.child != nil {
-			s.flattenDirectories(c)
-		} else {
-			s.directories = append(s.directories, c.name)
-		}
-	}
-	return *s
+	return
 }
 
 func getCwd() string {

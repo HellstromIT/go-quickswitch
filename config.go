@@ -6,14 +6,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sync"
-	"time"
 )
 
 // FileList Holds the directories to search
 type FileList struct {
 	Directories []DirectoryConf
-	sync.Mutex
 }
 
 // DirectoryConf Holds configuration for each directory
@@ -29,7 +26,7 @@ type FoundDirectories struct {
 type Directories struct {
 	name     string
 	searched bool
-	time     time.Time
+	time     int64
 	child    []Directories
 }
 

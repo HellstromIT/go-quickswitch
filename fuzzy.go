@@ -4,12 +4,17 @@ import (
 	"github.com/ktr0731/go-fuzzyfinder"
 )
 
-func (f FoundDirectories) getDirectory(cwd string) string {
-	idx, err := fuzzyfinder.Find(f.directories, func(i int) string {
-		return f.directories[i]
+func getDirectory(m map[string]int64, cwd string) string {
+	var list []string
+
+	for i := range m {
+		list = append(list, i)
+	}
+	idx, err := fuzzyfinder.Find(list, func(i int) string {
+		return list[i]
 	})
 	if err != nil {
 		return cwd
 	}
-	return f.directories[idx]
+	return list[idx]
 }
