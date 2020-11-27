@@ -36,13 +36,13 @@ func findInSlice(slice []string, val string) (int, bool) {
 	return -1, false
 }
 
-func walkDir(p string, d Directories, f *map[string]time.Time, depth int, max_depth int) Directories {
+func walkDir(p string, d Directories, f *map[string]time.Time, depth int, maxDepth int) Directories {
 
 	d.name = p
 	d.depth = depth
 	var childdir []Directories
 
-	if d.depth < max_depth {
+	if d.depth < maxDepth {
 		file, err := os.Open(p)
 		if err != nil {
 			return d
@@ -61,7 +61,7 @@ func walkDir(p string, d Directories, f *map[string]time.Time, depth int, max_de
 
 				var newChild Directories
 
-				childdir = append(childdir, walkDir(childPath, newChild, f, d.depth+1, max_depth))
+				childdir = append(childdir, walkDir(childPath, newChild, f, d.depth+1, maxDepth))
 			}
 		}
 	}
