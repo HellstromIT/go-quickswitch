@@ -52,11 +52,17 @@ func walkDir(p string, d Directories, f *map[string]time.Time, depth int, max_de
 			return d
 		}
 		for _, v := range names {
-			childPath := p + "/" + v
+			info, err := os.Stat(p + "/" + v)
+			if err != nil {
+				return d
+			}
+			if info.IsDir() {
+				childPath := p + "/" + v
 
-			var newChild Directories
+				var newChild Directories
 
-			childdir = append(childdir, walkDir(childPath, newChild, f, d.depth+1, max_depth))
+				childdir = append(childdir, walkDir(childPath, newChild, f, d.depth+1, max_depth))
+			}
 		}
 	}
 	d.child = childdir
