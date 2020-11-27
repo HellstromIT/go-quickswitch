@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 var wg sync.WaitGroup
@@ -68,6 +69,8 @@ func walkDir(p string, d Directories) Directories {
 
 	}
 	d.child = childdir
+	d.searched = true
+	d.time = time.Now()
 
 	return d
 }

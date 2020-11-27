@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 // FileList Holds the directories to search
@@ -26,8 +27,10 @@ type FoundDirectories struct {
 }
 
 type Directories struct {
-	name  string
-	child []Directories
+	name     string
+	searched bool
+	time     time.Time
+	child    []Directories
 }
 
 func (f *FileList) addDirectory(d string, git bool) {
