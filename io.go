@@ -4,9 +4,10 @@ import (
 	"encoding/gob"
 	"fmt"
 	"os"
+	"time"
 )
 
-func saveCacheToFile(m map[string]int64) {
+func saveCacheToFile(m map[string]time.Time) {
 	file, err := os.Create(getConfigFile("quickswitch/cache.json"))
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -25,8 +26,8 @@ func saveCacheToFile(m map[string]int64) {
 	return
 }
 
-func readCacheFromFile() map[string]int64 {
-	cache := make(map[string]int64)
+func readCacheFromFile() map[string]time.Time {
+	cache := make(map[string]time.Time)
 
 	file, err := os.Open(getConfigFile("quickswitch/cache.json"))
 	if err != nil {

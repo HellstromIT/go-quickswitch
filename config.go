@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // FileList Holds the directories to search
@@ -26,7 +27,7 @@ type FoundDirectories struct {
 type Directories struct {
 	name     string
 	searched bool
-	time     int64
+	time     time.Time
 	child    []Directories
 }
 

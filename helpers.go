@@ -36,7 +36,7 @@ func findInSlice(slice []string, val string) (int, bool) {
 	return -1, false
 }
 
-func walkDir(p string, d Directories, f *map[string]int64) Directories {
+func walkDir(p string, d Directories, f *map[string]time.Time) Directories {
 
 	d.name = p
 	var childdir []Directories
@@ -56,13 +56,13 @@ func walkDir(p string, d Directories, f *map[string]int64) Directories {
 		}
 		if v == ".git" {
 			d.searched = true
-			d.time = time.Now().Unix()
-			(*f)[p] = time.Now().Unix()
+			d.time = time.Now()
+			(*f)[p] = time.Now()
 			return d
 		} else if !info.IsDir() {
 			d.searched = true
-			d.time = time.Now().Unix()
-			(*f)[p] = time.Now().Unix()
+			d.time = time.Now()
+			(*f)[p] = time.Now()
 			return d
 		}
 	}
@@ -76,13 +76,13 @@ func walkDir(p string, d Directories, f *map[string]int64) Directories {
 	}
 	d.child = childdir
 	d.searched = true
-	d.time = time.Now().Unix()
-	(*f)[p] = time.Now().Unix()
+	d.time = time.Now()
+	(*f)[p] = time.Now()
 
 	return d
 }
 
-func walk(f FileList, flat map[string]int64) {
+func walk(f FileList, flat map[string]time.Time) {
 	var d Directories
 	d.name = "pseudo"
 	var childdir []Directories

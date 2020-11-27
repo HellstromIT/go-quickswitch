@@ -1,10 +1,12 @@
 package main
 
 import (
+	"time"
+
 	"github.com/ktr0731/go-fuzzyfinder"
 )
 
-func getDirectory(m map[string]int64, cwd string) string {
+func getDirectory(m map[string]time.Time, cwd string) string {
 	var list []string
 
 	for i := range m {
