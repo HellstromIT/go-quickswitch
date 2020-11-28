@@ -1,9 +1,11 @@
-package cli
+package quickswitch
 
 import (
 	"fmt"
 
 	"github.com/alecthomas/kong"
+
+	fuzzy "github.com/HellstromIT/go-quickswitch/pkgs/fuzzy"
 )
 
 type context struct {
@@ -53,7 +55,7 @@ func (r *rmCmd) Run(ctx *context) error {
 func (r *runCmd) Run(ctx *context) error {
 	cache := readCacheFromFile()
 	go walk(ctx.files)
-	fmt.Println(getDirectory(cache, getCwd()))
+	fmt.Println(fuzzy.GetDirectory(cache, getCwd()))
 	return nil
 }
 
@@ -64,7 +66,6 @@ func Cli() {
 	files := readConfigFromFile(configfile)
 
 	ctx := kong.Parse(&cli)
-
 	err := ctx.Run(&context{configFile: configfile, files: files})
 	ctx.FatalIfErrorf(err)
 }

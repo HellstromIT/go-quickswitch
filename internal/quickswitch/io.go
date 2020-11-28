@@ -1,4 +1,4 @@
-package cli
+package quickswitch
 
 import (
 	"encoding/gob"

@@ -1,7 +1,7 @@
 package main
 
 import (
-	cli "../../internal/quickswitch"
+	cli "github.com/HellstromIT/go-quickswitch/internal/quickswitch"
 )
 
 func main() {
