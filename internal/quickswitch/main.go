@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ type addCmdSub struct {
 
 type addCmd struct {
 	Paths     string `required arg name:"path" help:"Full Path to add." type:"path"`
-	addCmdSub `cmd`
+	addCmdSub `cmainmd`
 }
 
 type rmCmd struct {
@@ -57,6 +57,7 @@ func (r *runCmd) Run(ctx *context) error {
 	return nil
 }
 
+// Cli func
 func Cli() {
 	configfile := getConfigFile("quickswitch/quickswitch.json")
 
