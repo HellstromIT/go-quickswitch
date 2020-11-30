@@ -14,6 +14,8 @@ jobs:
         goarch: ["386", amd64, arm64, arm]
     steps:
     - uses: actions/checkout@v2
+    - name: Set APP_VERSION env
+      run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | ) cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
     - uses: wangyoucao577/go-release-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -22,6 +24,7 @@ jobs:
         goversion: "https://golang.org/dl/go1.15.5.linux-amd64.tar.gz"
         binary_name: "go-quickswitch"
         project_path: cmd/go-quickswitch
+        ldflags: -X "main.version=${{ env.APP_VERSION }}"
         extra_files: LICENSE README.md
   release-darwin:
     name: Release Go Binary
@@ -32,6 +35,8 @@ jobs:
         goarch: [amd64]
     steps:
     - uses: actions/checkout@v2
+    - name: Set APP_VERSION env
+      run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | ) cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
     - uses: wangyoucao577/go-release-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -40,6 +45,7 @@ jobs:
         goversion: "https://golang.org/dl/go1.15.5.linux-amd64.tar.gz"
         binary_name: "go-quickswitch"
         project_path: cmd/go-quickswitch
+        ldflags: -X "main.version=${{ env.APP_VERSION }}"
         extra_files: LICENSE README.md
   releases-windows:
     name: Release Go Binary
@@ -50,6 +56,8 @@ jobs:
         goarch: ["386", amd64, arm]
     steps:
     - uses: actions/checkout@v2
+    - name: Set APP_VERSION env
+      run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | ) cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
     - uses: wangyoucao577/go-release-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -58,4 +66,5 @@ jobs:
         goversion: "https://golang.org/dl/go1.15.5.linux-amd64.tar.gz"
         binary_name: "go-quickswitch"
         project_path: cmd/go-quickswitch
+        ldflags: -X "main.version=${{ env.APP_VERSION }}"
         extra_files: LICENSE README.md
