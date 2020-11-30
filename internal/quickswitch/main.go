@@ -20,7 +20,7 @@ type addCmdSub struct {
 
 type addCmd struct {
 	Paths     string `required arg name:"path" help:"Full Path to add." type:"path"`
-	addCmdSub `cmainmd`
+	addCmdSub `cmd`
 }
 
 type rmCmd struct {

@@ -4,11 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 )
-
-var wg sync.WaitGroup
 
 func getConfigFile(f string) string {
 	home, err := os.UserConfigDir()
