@@ -70,13 +70,13 @@ func (r *runCmd) Run(ctx *context) error {
 }
 
 // Cli func
-func Cli() {
+func Cli(v string) {
 	configfile := getConfigFile("quickswitch/quickswitch.json")
 
 	files := readConfigFromFile(configfile)
 
 	ctx := kong.Parse(&cli)
 
-	err := ctx.Run(&context{version: version, configFile: configfile, files: files})
+	err := ctx.Run(&context{version: v, configFile: configfile, files: files})
 	ctx.FatalIfErrorf(err)
 }

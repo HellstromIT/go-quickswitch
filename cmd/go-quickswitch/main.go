@@ -4,8 +4,8 @@ import (
 	cli "github.com/HellstromIT/go-quickswitch/internal/quickswitch"
 )
 
-var version string
+var version = "dev"
 
 func main() {
-	cli.Cli()
+	cli.Cli(version)
 }
