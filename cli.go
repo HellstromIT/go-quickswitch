@@ -7,6 +7,7 @@ import (
 )
 
 type context struct {
+	version    string
 	configFile string
 	files      FileList
 }
@@ -25,13 +26,17 @@ type rmCmd struct {
 	Paths string `arg name: "path" help:"Full path to remove." type:"path"`
 }
 
+type versionCmd struct {
+}
+
 type runCmd struct {
 }
 
 var cli struct {
-	Add    addCmd `cmd help:"Add Paths to configuration file."`
-	Remove rmCmd  `cmd help:"Remove Paths from configuration file."`
-	Run    runCmd `cmd help:"Fuzzy search directories" default:"1"`
+	Add     addCmd     `cmd help:"Add Paths to configuration file."`
+	Remove  rmCmd      `cmd help:"Remove Paths from configuration file."`
+	Run     runCmd     `cmd help:"Fuzzy search directories" default:"1"`
+	Version versionCmd `cmd help:"Print version."`
 }
 
 func (a *addCmd) Run(ctx *context) error {
@@ -50,6 +55,11 @@ func (r *rmCmd) Run(ctx *context) error {
 	return nil
 }
 
+func (v *versionCmd) Run(ctx *context) error {
+	fmt.Println(ctx.version)
+	return nil
+}
+
 func (r *runCmd) Run(ctx *context) error {
 	cache := readCacheFromFile()
 	go walk(ctx.files)
@@ -64,6 +74,6 @@ func Cli() {
 
 	ctx := kong.Parse(&cli)
 
-	err := ctx.Run(&context{configFile: configfile, files: files})
+	err := ctx.Run(&context{version: version, configFile: configfile, files: files})
 	ctx.FatalIfErrorf(err)
 }
