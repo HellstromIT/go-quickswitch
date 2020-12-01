@@ -47,13 +47,19 @@ There's no default search directories out of the box so to add a directory you w
 
 Linux/Mac:
 ```
-go-quickswitch -add=/path/to/search/directory
+go-quickswitch add /path/to/search/directory [--git] [--depth 2]
 ```
 
 Windows:
 ```
-go-quickswitch.exe -add=/path/to/search/directory
+go-quickswitch.exe add /path/to/search/directory [--git] [--depth 2]
 ```
+
+--git and --depth are optional. --git defaults to false if omitted and --depth defaults to 0 if omitted.
+
+--git indicates that this is a folder containing multiple git repositories. A scan will be done to find all the git repositories if this flag is added.
+
+--depth is used if the directory is not a git directory but you still want to find all directories down to a certain depth within it. Useful if you wanna be able to scan over a non-git tree but don't want all folders to be found.
 
 The command will only search one level deep so if you have multiple levels that you wish to search you need to add them one at a time.
 
@@ -86,17 +92,16 @@ function qq
     if [ -n "$argv[1]" ]
         switch "$argv[1]"
             case add
-                go-quickswitch -add=$argv[2]
+                go-quickswitch add $argv[2..-1]
             case remove
-                go-quickswitch -remove=$argv[2]
+                go-quickswitch remove $argv[2..-1]
+            case version
+                go-quickswitch version $argv[2..-1]
+            case help
+                go-quickswitch -h
         end
     else
-        set directory (go-quickswitch)
-        if set -q directory
-            cd $directory
-        else
-            echo
-        end
+        cd (go-quickswitch)
     end
 end
 
@@ -110,6 +115,8 @@ end
 
 complete -f -c qq -n '__fish_qq_needs_command' -a add
 complete -f -c qq -n '__fish_qq_needs_command' -a delete
+complete -f -c qq -n '__fish_qq_needs_command' -a version
+complete -f -c qq -n '__fish_qq_needs_command' -a help
 ``` 
 
 ### zsh
