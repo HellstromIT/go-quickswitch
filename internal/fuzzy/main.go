@@ -1,4 +1,4 @@
-package main
+package fuzzy
 
 import (
 	"time"
@@ -6,7 +6,8 @@ import (
 	"github.com/ktr0731/go-fuzzyfinder"
 )
 
-func getDirectory(m map[string]time.Time, cwd string) string {
+// GetDirectory Spawn a fuzzy finder prompt
+func GetDirectory(m map[string]time.Time, cwd string) string {
 	var list []string
 
 	for i := range m {

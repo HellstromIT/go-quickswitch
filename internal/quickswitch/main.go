@@ -1,15 +1,17 @@
-package main
+package quickswitch
 
 import (
 	"fmt"
 
 	"github.com/alecthomas/kong"
+
+	"github.com/HellstromIT/go-quickswitch/cmd/go-quickswitch/internal/fuzzy"
 )
 
 type context struct {
 	version    string
 	configFile string
-	files      FileList
+	files      fileList
 }
 
 type addCmdSub struct {
@@ -63,17 +65,18 @@ func (v *versionCmd) Run(ctx *context) error {
 func (r *runCmd) Run(ctx *context) error {
 	cache := readCacheFromFile()
 	go walk(ctx.files)
-	fmt.Println(getDirectory(cache, getCwd()))
+	fmt.Println(fuzzy.GetDirectory(cache, getCwd()))
 	return nil
 }
 
-func Cli() {
+// Cli func
+func Cli(v string) {
 	configfile := getConfigFile("quickswitch/quickswitch.json")
 
 	files := readConfigFromFile(configfile)
 
 	ctx := kong.Parse(&cli)
 
-	err := ctx.Run(&context{version: version, configFile: configfile, files: files})
+	err := ctx.Run(&context{version: v, configFile: configfile, files: files})
 	ctx.FatalIfErrorf(err)
 }
