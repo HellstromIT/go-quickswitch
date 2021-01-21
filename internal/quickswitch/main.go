@@ -5,13 +5,13 @@ import (
 
 	"github.com/alecthomas/kong"
 
-	fuzzy "github.com/HellstromIT/go-quickswitch/pkgs/fuzzy"
+	"github.com/HellstromIT/go-quickswitch/cmd/go-quickswitch/internal/fuzzy"
 )
 
 type context struct {
 	version    string
 	configFile string
-	files      FileList
+	files      fileList
 }
 
 type addCmdSub struct {
