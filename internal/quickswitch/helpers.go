@@ -100,6 +100,7 @@ func walkGitDir(p string, d directories, f *map[string]time.Time, depth int) dir
 		childdir = append(childdir, walkGitDir(childPath, newChild, f, d.depth+1))
 
 	}
+
 	d.child = childdir
 	d.searched = true
 	d.time = time.Now()
@@ -113,7 +114,7 @@ func walk(f fileList) {
 	d.name = "pseudo"
 	var childdir []directories
 	flat := make(map[string]time.Time)
-	for _, dir := range f.directories {
+	for _, dir := range f.Directories {
 		if dir.Git {
 			var newChild directories
 

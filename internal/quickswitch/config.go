@@ -11,13 +11,13 @@ import (
 )
 
 type fileList struct {
-	directories []directoryConf
+	Directories []directoryConf `json:"Directories"`
 }
 
 type directoryConf struct {
-	Directory string
-	Git       bool
-	Depth     int
+	Directory string `json:"Directory"`
+	Git       bool   `json:"Git"`
+	Depth     int    `json:"Depth"`
 }
 
 type directories struct {
@@ -42,19 +42,19 @@ func (f *fileList) addDirectory(d string, git bool, depth int) {
 		Git:       git,
 		Depth:     depth,
 	}
-	_, found := findInDirectoryConf(f.directories, d)
+	_, found := findInDirectoryConf(f.Directories, d)
 	if !found {
-		f.directories = append(f.directories, newDirectory)
+		f.Directories = append(f.Directories, newDirectory)
 	}
 }
 
 func (f *fileList) removeDirectory(directory string) {
-	i, found := findInDirectoryConf(f.directories, directory)
+	i, found := findInDirectoryConf(f.Directories, directory)
 	if !found {
 		fmt.Println("Directory not found in config. Make sure you're using the exact path")
 		os.Exit(1)
 	}
-	f.directories = append(f.directories[:i], f.directories[i+1:]...)
+	f.Directories = append(f.Directories[:i], f.Directories[i+1:]...)
 }
 
 func (f *fileList) createBaseConfig(filename string) {
