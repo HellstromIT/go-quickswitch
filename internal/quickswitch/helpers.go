@@ -80,12 +80,7 @@ func walkGitDir(p string, d directories, f *map[string]time.Time, depth int) dir
 		if err != nil {
 			return d
 		}
-		if v == ".git" {
-			d.searched = true
-			d.time = time.Now()
-			(*f)[p] = time.Now()
-			return d
-		} else if !info.IsDir() {
+		if v == ".git" || !info.IsDir() {
 			d.searched = true
 			d.time = time.Now()
 			(*f)[p] = time.Now()

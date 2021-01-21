@@ -28,10 +28,14 @@ type directories struct {
 	child    []directories
 }
 
+func printErr(e error) {
+	fmt.Println("Error:", e)
+}
+
 func getConfigFile(f string) string {
 	home, err := os.UserConfigDir()
 	if err != nil {
-		fmt.Println("Error:", err)
+		printErr(err)
 	}
 	return filepath.Join(home, f)
 }
@@ -61,9 +65,9 @@ func (f *fileList) createBaseConfig(filename string) {
 
 	(*f).addDirectory(getCwd(), false, 0)
 
-	errMkdir := os.MkdirAll(filepath.Dir(filename), 0755)
-	if errMkdir != nil {
-		fmt.Println("Error:", errMkdir)
+	err := os.MkdirAll(filepath.Dir(filename), 0755)
+	if err != nil {
+		printErr(err)
 		os.Exit(1)
 	}
 
@@ -73,7 +77,7 @@ func (f *fileList) createBaseConfig(filename string) {
 func (f *fileList) saveConfigToFile(filename string) error {
 	bs, err := json.MarshalIndent(*f, "", "  ")
 	if err != nil {
-		fmt.Println("Error:", err)
+		printErr(err)
 		os.Exit(1)
 	}
 	return ioutil.WriteFile(filename, bs, 0644)
@@ -85,13 +89,13 @@ func readConfigFromFile(filename string) fileList {
 	if _, err := os.Stat(filename); err == nil {
 		bs, err := ioutil.ReadFile(filename)
 		if err != nil {
-			fmt.Println("Error:", err)
+			printErr(err)
 			os.Exit(1)
 		}
 
-		jsonErr := json.Unmarshal(bs, &fileList)
-		if jsonErr != nil {
-			fmt.Println("Error:", jsonErr)
+		err = json.Unmarshal(bs, &fileList)
+		if err != nil {
+			printErr(err)
 			os.Exit(1)
 		}
 		return fileList
@@ -110,7 +114,7 @@ func readConfigFromFile(filename string) fileList {
 func saveCacheToFile(m map[string]time.Time) {
 	file, err := os.Create(getConfigFile("quickswitch/cache.json"))
 	if err != nil {
-		fmt.Println("Error:", err)
+		printErr(err)
 		os.Exit(1)
 	}
 
@@ -120,7 +124,7 @@ func saveCacheToFile(m map[string]time.Time) {
 
 	err = e.Encode(m)
 	if err != nil {
-		fmt.Println("Error:", err)
+		printErr(err)
 		os.Exit(1)
 	}
 	return
@@ -131,7 +135,7 @@ func readCacheFromFile() map[string]time.Time {
 
 	file, err := os.Open(getConfigFile("quickswitch/cache.json"))
 	if err != nil {
-		fmt.Println("Error:", err)
+		printErr(err)
 		return cache
 	}
 	defer file.Close()
@@ -140,7 +144,7 @@ func readCacheFromFile() map[string]time.Time {
 
 	err = d.Decode(&cache)
 	if err != nil {
-		fmt.Println("Error:", err)
+		printErr(err)
 	}
 
 	return cache
