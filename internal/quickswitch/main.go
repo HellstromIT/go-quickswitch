@@ -3,9 +3,8 @@ package quickswitch
 import (
 	"fmt"
 
-	"github.com/alecthomas/kong"
-
 	"github.com/HellstromIT/go-quickswitch/cmd/go-quickswitch/internal/fuzzy"
+	"github.com/alecthomas/kong"
 )
 
 type context struct {
