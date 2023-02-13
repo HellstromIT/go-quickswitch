@@ -76,11 +76,7 @@ func walkGitDir(p string, d directories, f *map[string]time.Time, depth int) dir
 		return d
 	}
 	for _, v := range names {
-		info, err := os.Stat(p + "/" + v)
-		if err != nil {
-			return d
-		}
-		if v == ".git" || !info.IsDir() {
+		if v == ".git" {
 			d.searched = true
 			d.time = time.Now()
 			(*f)[p] = time.Now()
@@ -88,12 +84,17 @@ func walkGitDir(p string, d directories, f *map[string]time.Time, depth int) dir
 		}
 	}
 	for _, v := range names {
+		info, err := os.Stat(p + "/" + v)
+		if err != nil {
+			return d
+		}
+		if !info.IsDir() {
+			continue
+		}
 		childPath := p + "/" + v
 
 		var newChild directories
-
 		childdir = append(childdir, walkGitDir(childPath, newChild, f, d.depth+1))
-
 	}
 
 	d.child = childdir
