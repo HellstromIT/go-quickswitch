@@ -3,9 +3,18 @@ package quickswitch
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 )
+
+// mustMkdirAll creates a directory and fails the test if it errors
+func mustMkdirAll(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0755); err != nil {
+		t.Fatalf("failed to create test directory %s: %v", path, err)
+	}
+}
 
 func TestFindInSlice(t *testing.T) {
 	tests := []struct {
@@ -76,17 +85,17 @@ func TestFindInDirectoryConf(t *testing.T) {
 		{
 			name: "find existing directory",
 			slice: []directoryConf{
-				{Directory: "/home/user/projects", Git: true, Depth: 0},
-				{Directory: "/home/user/work", Git: false, Depth: 2},
+				{Directory: testPathProjects, Git: true, Depth: 0},
+				{Directory: testPathWork, Git: false, Depth: 2},
 			},
-			val:       "/home/user/work",
+			val:       testPathWork,
 			wantIndex: 1,
 			wantFound: true,
 		},
 		{
 			name: "directory not found",
 			slice: []directoryConf{
-				{Directory: "/home/user/projects", Git: true, Depth: 0},
+				{Directory: testPathProjects, Git: true, Depth: 0},
 			},
 			val:       "/home/user/other",
 			wantIndex: -1,
@@ -95,7 +104,7 @@ func TestFindInDirectoryConf(t *testing.T) {
 		{
 			name:      "empty slice",
 			slice:     []directoryConf{},
-			val:       "/home/user/projects",
+			val:       testPathProjects,
 			wantIndex: -1,
 			wantFound: false,
 		},
@@ -120,9 +129,7 @@ func TestWalkDir(t *testing.T) {
 
 	// Create: tmpDir/a/b/c
 	nestedDir := filepath.Join(tmpDir, "a", "b", "c")
-	if err := os.MkdirAll(nestedDir, 0755); err != nil {
-		t.Fatalf("failed to create test directories: %v", err)
-	}
+	mustMkdirAll(t, nestedDir)
 
 	// Create a file to ensure it's not included
 	testFile := filepath.Join(tmpDir, "a", "test.txt")
@@ -182,20 +189,14 @@ func TestWalkGitDir(t *testing.T) {
 
 	// Create: tmpDir/repo1/.git (git repo)
 	repo1 := filepath.Join(tmpDir, "repo1")
-	if err := os.MkdirAll(filepath.Join(repo1, ".git"), 0755); err != nil {
-		t.Fatalf("failed to create test directories: %v", err)
-	}
+	mustMkdirAll(t, filepath.Join(repo1, ".git"))
 
 	// Create: tmpDir/repo1/subdir (should not be included, parent is git repo)
-	if err := os.MkdirAll(filepath.Join(repo1, "subdir"), 0755); err != nil {
-		t.Fatalf("failed to create test directories: %v", err)
-	}
+	mustMkdirAll(t, filepath.Join(repo1, "subdir"))
 
 	// Create: tmpDir/notrepo/nested/repo2/.git
 	repo2 := filepath.Join(tmpDir, "notrepo", "nested", "repo2")
-	if err := os.MkdirAll(filepath.Join(repo2, ".git"), 0755); err != nil {
-		t.Fatalf("failed to create test directories: %v", err)
-	}
+	mustMkdirAll(t, filepath.Join(repo2, ".git"))
 
 	flat := make(map[string]time.Time)
 	var d directories
@@ -213,5 +214,94 @@ func TestWalkGitDir(t *testing.T) {
 	subdir := filepath.Join(repo1, "subdir")
 	if _, ok := flat[subdir]; ok {
 		t.Errorf("walkGitDir() should not include subdirs of git repos: %s", subdir)
+	}
+}
+
+func TestWalkDirLive(t *testing.T) {
+	// Create a temporary directory structure
+	tmpDir := t.TempDir()
+
+	// Create: tmpDir/a/b
+	nestedDir := filepath.Join(tmpDir, "a", "b")
+	mustMkdirAll(t, nestedDir)
+
+	var list []string
+	var mu sync.RWMutex
+	seen := make(map[string]bool)
+	flat := make(map[string]time.Time)
+
+	walkDirLive(tmpDir, &flat, 0, 2, &list, &mu, seen)
+
+	// Should find tmpDir, tmpDir/a, tmpDir/a/b
+	expectedDirs := []string{tmpDir, filepath.Join(tmpDir, "a"), filepath.Join(tmpDir, "a", "b")}
+
+	if len(list) != len(expectedDirs) {
+		t.Errorf("walkDirLive() found %d directories, want %d", len(list), len(expectedDirs))
+	}
+
+	for _, dir := range expectedDirs {
+		if !seen[dir] {
+			t.Errorf("walkDirLive() missing expected directory: %s", dir)
+		}
+	}
+
+	// Verify cache map is also populated
+	for _, dir := range expectedDirs {
+		if _, ok := flat[dir]; !ok {
+			t.Errorf("walkDirLive() cache missing expected directory: %s", dir)
+		}
+	}
+}
+
+func TestWalkGitDirLive(t *testing.T) {
+	// Create a temporary directory structure with .git folders
+	tmpDir := t.TempDir()
+
+	// Create: tmpDir/repo1/.git
+	repo1 := filepath.Join(tmpDir, "repo1")
+	mustMkdirAll(t, filepath.Join(repo1, ".git"))
+
+	// Create: tmpDir/notrepo/repo2/.git
+	repo2 := filepath.Join(tmpDir, "notrepo", "repo2")
+	mustMkdirAll(t, filepath.Join(repo2, ".git"))
+
+	var list []string
+	var mu sync.RWMutex
+	seen := make(map[string]bool)
+	flat := make(map[string]time.Time)
+
+	walkGitDirLive(tmpDir, &flat, &list, &mu, seen)
+
+	// Should find repo1 and repo2
+	expectedRepos := []string{repo1, repo2}
+
+	if len(list) != len(expectedRepos) {
+		t.Errorf("walkGitDirLive() found %d repos, want %d", len(list), len(expectedRepos))
+	}
+
+	for _, repo := range expectedRepos {
+		if !seen[repo] {
+			t.Errorf("walkGitDirLive() missing expected repo: %s", repo)
+		}
+	}
+}
+
+func TestWalkLiveSkipsDuplicates(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	var list []string
+	var mu sync.RWMutex
+	seen := make(map[string]bool)
+	flat := make(map[string]time.Time)
+
+	// Pre-populate seen with tmpDir
+	seen[tmpDir] = true
+	list = append(list, tmpDir)
+
+	walkDirLive(tmpDir, &flat, 0, 0, &list, &mu, seen)
+
+	// Should not add tmpDir again
+	if len(list) != 1 {
+		t.Errorf("walkDirLive() should not add duplicates, got %d items", len(list))
 	}
 }

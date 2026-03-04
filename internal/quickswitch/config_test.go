@@ -7,46 +7,51 @@ import (
 	"testing"
 )
 
+const (
+	testPathProjects = "/home/user/projects"
+	testPathWork     = "/home/user/work"
+)
+
 func TestAddDirectory(t *testing.T) {
 	tests := []struct {
-		name          string
-		initial       []directoryConf
-		addPath       string
-		addGit        bool
-		addDepth      int
-		wantLen       int
-		wantContains  string
+		name         string
+		initial      []directoryConf
+		addPath      string
+		addGit       bool
+		addDepth     int
+		wantLen      int
+		wantContains string
 	}{
 		{
 			name:         "add to empty list",
 			initial:      []directoryConf{},
-			addPath:      "/home/user/projects",
+			addPath:      testPathProjects,
 			addGit:       true,
 			addDepth:     0,
 			wantLen:      1,
-			wantContains: "/home/user/projects",
+			wantContains: testPathProjects,
 		},
 		{
 			name: "add to existing list",
 			initial: []directoryConf{
-				{Directory: "/home/user/work", Git: false, Depth: 2},
+				{Directory: testPathWork, Git: false, Depth: 2},
 			},
-			addPath:      "/home/user/projects",
+			addPath:      testPathProjects,
 			addGit:       true,
 			addDepth:     0,
 			wantLen:      2,
-			wantContains: "/home/user/projects",
+			wantContains: testPathProjects,
 		},
 		{
 			name: "add duplicate is ignored",
 			initial: []directoryConf{
-				{Directory: "/home/user/projects", Git: true, Depth: 0},
+				{Directory: testPathProjects, Git: true, Depth: 0},
 			},
-			addPath:      "/home/user/projects",
+			addPath:      testPathProjects,
 			addGit:       false,
 			addDepth:     5,
 			wantLen:      1,
-			wantContains: "/home/user/projects",
+			wantContains: testPathProjects,
 		},
 	}
 
@@ -100,8 +105,8 @@ func TestSaveAndReadConfigFile(t *testing.T) {
 	// Create a fileList and save it
 	original := &fileList{
 		Directories: []directoryConf{
-			{Directory: "/home/user/projects", Git: true, Depth: 0},
-			{Directory: "/home/user/work", Git: false, Depth: 3},
+			{Directory: testPathProjects, Git: true, Depth: 0},
+			{Directory: testPathWork, Git: false, Depth: 3},
 		},
 	}
 
@@ -126,8 +131,8 @@ func TestSaveAndReadConfigFile(t *testing.T) {
 		t.Errorf("loaded config has %d directories, want 2", len(loaded.Directories))
 	}
 
-	if loaded.Directories[0].Directory != "/home/user/projects" {
-		t.Errorf("first directory = %s, want /home/user/projects", loaded.Directories[0].Directory)
+	if loaded.Directories[0].Directory != testPathProjects {
+		t.Errorf("first directory = %s, want %s", loaded.Directories[0].Directory, testPathProjects)
 	}
 
 	if loaded.Directories[0].Git != true {
