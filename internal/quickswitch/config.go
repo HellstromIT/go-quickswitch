@@ -4,7 +4,6 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -80,14 +79,14 @@ func (f *fileList) saveConfigToFile(filename string) error {
 		printErr(err)
 		os.Exit(1)
 	}
-	return ioutil.WriteFile(filename, bs, 0644)
+	return os.WriteFile(filename, bs, 0644)
 }
 
 func readConfigFromFile(filename string) fileList {
 	var fileList fileList
 
 	if _, err := os.Stat(filename); err == nil {
-		bs, err := ioutil.ReadFile(filename)
+		bs, err := os.ReadFile(filename)
 		if err != nil {
 			printErr(err)
 			os.Exit(1)
