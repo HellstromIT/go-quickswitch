@@ -64,13 +64,27 @@ func (v *versionCmd) Run(ctx *context) error {
 
 func (r *runCmd) Run(ctx *context) error {
 	cache := readCacheFromFile()
+
+	// Initialize list from cache
+	var list []string
+	seen := make(map[string]bool)
+	for path := range cache {
+		list = append(list, path)
+		seen[path] = true
+	}
+
+	var mu sync.RWMutex
 	var wg sync.WaitGroup
+
+	// Start walking directories in background with hot reload
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		walk(ctx.files)
+		walkLive(ctx.files, &list, &mu, seen)
 	}()
-	fmt.Println(fuzzy.GetDirectory(cache, getCwd()))
+
+	// Show fuzzy finder with hot reload support
+	fmt.Println(fuzzy.GetDirectoryLive(&list, &mu, getCwd()))
 	wg.Wait()
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -136,4 +137,98 @@ func getCwd() string {
 	}
 
 	return path
+}
+
+// walkLive walks directories and updates both the cache map and a live list.
+// The list is updated with mutex protection for hot reload support.
+func walkLive(f fileList, list *[]string, mu *sync.RWMutex, seen map[string]bool) {
+	flat := make(map[string]time.Time)
+
+	for _, dir := range f.Directories {
+		if dir.Git {
+			walkGitDirLive(dir.Directory, &flat, list, mu, seen)
+		} else {
+			walkDirLive(dir.Directory, &flat, 0, dir.Depth, list, mu, seen)
+		}
+	}
+
+	saveCacheToFile(flat)
+}
+
+func walkDirLive(p string, f *map[string]time.Time, depth int, maxDepth int, list *[]string, mu *sync.RWMutex, seen map[string]bool) {
+	// Add this directory to the live list if not already seen
+	mu.Lock()
+	if !seen[p] {
+		seen[p] = true
+		*list = append(*list, p)
+	}
+	mu.Unlock()
+
+	(*f)[p] = time.Now()
+
+	if depth >= maxDepth {
+		return
+	}
+
+	file, err := os.Open(p)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	names, err := file.Readdirnames(0)
+	if err != nil {
+		return
+	}
+
+	for _, v := range names {
+		childPath := filepath.Join(p, v)
+		info, err := os.Stat(childPath)
+		if err != nil {
+			continue
+		}
+		if info.IsDir() {
+			walkDirLive(childPath, f, depth+1, maxDepth, list, mu, seen)
+		}
+	}
+}
+
+func walkGitDirLive(p string, f *map[string]time.Time, list *[]string, mu *sync.RWMutex, seen map[string]bool) {
+	file, err := os.Open(p)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	names, err := file.Readdirnames(0)
+	if err != nil {
+		return
+	}
+
+	// Check if this is a git repo
+	for _, v := range names {
+		if v == ".git" {
+			// Found a git repo - add it and stop recursing
+			mu.Lock()
+			if !seen[p] {
+				seen[p] = true
+				*list = append(*list, p)
+			}
+			mu.Unlock()
+			(*f)[p] = time.Now()
+			return
+		}
+	}
+
+	// Not a git repo, recurse into subdirectories
+	for _, v := range names {
+		childPath := filepath.Join(p, v)
+		info, err := os.Stat(childPath)
+		if err != nil {
+			continue
+		}
+		if info.IsDir() {
+			walkGitDirLive(childPath, f, list, mu, seen)
+		}
+	}
 }
