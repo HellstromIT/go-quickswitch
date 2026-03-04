@@ -1,11 +1,12 @@
 package quickswitch
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/HellstromIT/go-quickswitch/cmd/go-quickswitch/internal/log"
 )
 
 func findInDirectoryConf(slice []directoryConf, val string) (int, bool) {
@@ -113,29 +114,28 @@ func walk(f fileList) {
 	var childdir []directories
 	flat := make(map[string]time.Time)
 	for _, dir := range f.Directories {
+		log.Debug("walking directory", "path", dir.Directory, "git", dir.Git, "depth", dir.Depth)
 		if dir.Git {
 			var newChild directories
-
 			childdir = append(childdir, walkGitDir(dir.Directory, newChild, &flat, 0))
 		} else {
 			var newChild directories
-
 			childdir = append(childdir, walkDir(dir.Directory, newChild, &flat, 0, dir.Depth))
 		}
 	}
 
-	saveCacheToFile(flat)
+	if err := saveCacheToFile(flat); err != nil {
+		log.Error("failed to save cache", "error", err)
+	}
 	d.child = childdir
-
-	return
 }
 
 func getCwd() string {
 	path, err := os.Getwd()
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Error("failed to get current directory", "error", err)
+		return "."
 	}
-
 	return path
 }
 
@@ -145,6 +145,7 @@ func walkLive(f fileList, list *[]string, mu *sync.RWMutex, seen map[string]bool
 	flat := make(map[string]time.Time)
 
 	for _, dir := range f.Directories {
+		log.Debug("walking directory (live)", "path", dir.Directory, "git", dir.Git, "depth", dir.Depth)
 		if dir.Git {
 			walkGitDirLive(dir.Directory, &flat, list, mu, seen)
 		} else {
@@ -152,7 +153,9 @@ func walkLive(f fileList, list *[]string, mu *sync.RWMutex, seen map[string]bool
 		}
 	}
 
-	saveCacheToFile(flat)
+	if err := saveCacheToFile(flat); err != nil {
+		log.Error("failed to save cache", "error", err)
+	}
 }
 
 func walkDirLive(p string, f *map[string]time.Time, depth int, maxDepth int, list *[]string, mu *sync.RWMutex, seen map[string]bool) {

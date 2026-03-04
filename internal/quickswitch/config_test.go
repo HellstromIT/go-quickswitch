@@ -144,6 +144,30 @@ func TestSaveAndReadConfigFile(t *testing.T) {
 	}
 }
 
+func TestRemoveDirectory(t *testing.T) {
+	f := &fileList{
+		Directories: []directoryConf{
+			{Directory: testPathProjects, Git: true, Depth: 0},
+			{Directory: testPathWork, Git: false, Depth: 2},
+		},
+	}
+
+	// Remove existing directory
+	err := f.removeDirectory(testPathWork)
+	if err != nil {
+		t.Errorf("removeDirectory() unexpected error: %v", err)
+	}
+	if len(f.Directories) != 1 {
+		t.Errorf("removeDirectory() resulted in %d directories, want 1", len(f.Directories))
+	}
+
+	// Try to remove non-existent directory
+	err = f.removeDirectory("/nonexistent/path")
+	if err == nil {
+		t.Error("removeDirectory() expected error for non-existent path")
+	}
+}
+
 func TestConfigFileFormat(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.json")
