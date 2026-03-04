@@ -3,6 +3,7 @@ package quickswitch
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -40,12 +41,12 @@ func walkDir(p string, d directories, f *map[string]time.Time, depth int, maxDep
 			return d
 		}
 		for _, v := range names {
-			info, err := os.Stat(p + "/" + v)
+			info, err := os.Stat(filepath.Join(p, v))
 			if err != nil {
 				return d
 			}
 			if info.IsDir() {
-				childPath := p + "/" + v
+				childPath := filepath.Join(p, v)
 
 				var newChild directories
 
@@ -84,14 +85,14 @@ func walkGitDir(p string, d directories, f *map[string]time.Time, depth int) dir
 		}
 	}
 	for _, v := range names {
-		info, err := os.Stat(p + "/" + v)
+		info, err := os.Stat(filepath.Join(p, v))
 		if err != nil {
 			return d
 		}
 		if !info.IsDir() {
 			continue
 		}
-		childPath := p + "/" + v
+		childPath := filepath.Join(p, v)
 
 		var newChild directories
 		childdir = append(childdir, walkGitDir(childPath, newChild, f, d.depth+1))

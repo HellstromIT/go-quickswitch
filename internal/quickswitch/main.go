@@ -2,6 +2,7 @@ package quickswitch
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/HellstromIT/go-quickswitch/cmd/go-quickswitch/internal/fuzzy"
 	"github.com/alecthomas/kong"
@@ -63,8 +64,14 @@ func (v *versionCmd) Run(ctx *context) error {
 
 func (r *runCmd) Run(ctx *context) error {
 	cache := readCacheFromFile()
-	go walk(ctx.files)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		walk(ctx.files)
+	}()
 	fmt.Println(fuzzy.GetDirectory(cache, getCwd()))
+	wg.Wait()
 	return nil
 }
 
