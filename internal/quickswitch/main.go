@@ -45,6 +45,12 @@ var cli struct {
 	Version versionCmd `cmd help:"Print version."`
 }
 
+// fatal prints an error to stderr and exits
+func fatal(err error) {
+	fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+	os.Exit(1)
+}
+
 func (a *addCmd) Run(ctx *context) error {
 	ctx.files.addDirectory(a.Paths, a.Git, a.Depth)
 	if err := ctx.files.saveConfigToFile(ctx.configFile); err != nil {
@@ -109,22 +115,19 @@ func Cli(v string) {
 		log.Debug("debug logging enabled")
 	}
 
-	configFile, err := getConfigFile("quickswitch/quickswitch.json")
+	configFile, err := GetConfigPath()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		fatal(err)
 	}
 
-	cacheFile, err := getConfigFile("quickswitch/cache.json")
+	cacheFile, err := GetCachePath()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		fatal(err)
 	}
 
 	result, err := readConfigFromFile(configFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		fatal(err)
 	}
 
 	if result.Created {
@@ -140,7 +143,6 @@ func Cli(v string) {
 		files:      result.FileList,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		fatal(err)
 	}
 }

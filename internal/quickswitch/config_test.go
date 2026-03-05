@@ -11,7 +11,17 @@ import (
 const (
 	testPathProjects = "/home/user/projects"
 	testPathWork     = "/home/user/work"
+	testCacheFile    = "cache.gob"
+	testConfigFile   = "config.json"
 )
+
+// mustSaveConfig saves config and fails test on error
+func mustSaveConfig(t *testing.T, f *fileList, path string) {
+	t.Helper()
+	if err := f.saveConfigToFile(path); err != nil {
+		t.Fatalf("saveConfigToFile() error = %v", err)
+	}
+}
 
 func TestAddDirectory(t *testing.T) {
 	tests := []struct {
@@ -101,7 +111,7 @@ func TestAddDirectoryPreservesFlags(t *testing.T) {
 
 func TestSaveAndReadConfigFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config.json")
+	configFile := filepath.Join(tmpDir, testConfigFile)
 
 	// Create a fileList and save it
 	original := &fileList{
@@ -111,10 +121,7 @@ func TestSaveAndReadConfigFile(t *testing.T) {
 		},
 	}
 
-	err := original.saveConfigToFile(configFile)
-	if err != nil {
-		t.Fatalf("saveConfigToFile() error = %v", err)
-	}
+	mustSaveConfig(t, original, configFile)
 
 	// Verify file exists and is valid JSON
 	data, err := os.ReadFile(configFile)
@@ -171,7 +178,7 @@ func TestRemoveDirectory(t *testing.T) {
 
 func TestConfigFileFormat(t *testing.T) {
 	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config.json")
+	configFile := filepath.Join(tmpDir, testConfigFile)
 
 	f := &fileList{
 		Directories: []directoryConf{
@@ -179,10 +186,7 @@ func TestConfigFileFormat(t *testing.T) {
 		},
 	}
 
-	err := f.saveConfigToFile(configFile)
-	if err != nil {
-		t.Fatalf("saveConfigToFile() error = %v", err)
-	}
+	mustSaveConfig(t, f, configFile)
 
 	// Read raw content and verify it's properly indented
 	data, err := os.ReadFile(configFile)
@@ -209,7 +213,7 @@ func TestConfigFileFormat(t *testing.T) {
 
 func TestSaveAndReadCacheFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	cacheFile := filepath.Join(tmpDir, "cache.gob")
+	cacheFile := filepath.Join(tmpDir, testCacheFile)
 
 	// Create test data
 	original := map[string]time.Time{
@@ -254,7 +258,7 @@ func TestReadCacheFromNonExistentFile(t *testing.T) {
 
 func TestReadConfigFromFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config.json")
+	configFile := filepath.Join(tmpDir, testConfigFile)
 
 	// Create a config file
 	original := &fileList{
@@ -262,10 +266,7 @@ func TestReadConfigFromFile(t *testing.T) {
 			{Directory: testPathProjects, Git: true, Depth: 0},
 		},
 	}
-	err := original.saveConfigToFile(configFile)
-	if err != nil {
-		t.Fatalf("saveConfigToFile() error = %v", err)
-	}
+	mustSaveConfig(t, original, configFile)
 
 	// Read it back
 	result, err := readConfigFromFile(configFile)
@@ -284,7 +285,7 @@ func TestReadConfigFromFile(t *testing.T) {
 
 func TestReadConfigFromFileNotExist(t *testing.T) {
 	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "subdir", "config.json")
+	configFile := filepath.Join(tmpDir, "subdir", testConfigFile)
 
 	// Reading non-existent file should create it
 	result, err := readConfigFromFile(configFile)

@@ -12,8 +12,24 @@ import (
 	"github.com/HellstromIT/go-quickswitch/cmd/go-quickswitch/internal/log"
 )
 
+// Config file paths relative to user config directory
+const (
+	configFilePath = "quickswitch/quickswitch.json"
+	cacheFilePath  = "quickswitch/cache.json"
+)
+
 // ErrDirectoryNotFound is returned when a directory is not found in the config
 var ErrDirectoryNotFound = errors.New("directory not found in config")
+
+// GetConfigPath returns the full path to the config file
+func GetConfigPath() (string, error) {
+	return getConfigFile(configFilePath)
+}
+
+// GetCachePath returns the full path to the cache file
+func GetCachePath() (string, error) {
+	return getConfigFile(cacheFilePath)
+}
 
 type fileList struct {
 	Directories []directoryConf `json:"Directories"`

@@ -308,7 +308,7 @@ func TestWalkLiveSkipsDuplicates(t *testing.T) {
 
 func TestWalk(t *testing.T) {
 	tmpDir := t.TempDir()
-	cacheFile := filepath.Join(tmpDir, "cache.gob")
+	cacheFile := filepath.Join(tmpDir, "testCacheFile")
 
 	// Create directory structure
 	projectDir := filepath.Join(tmpDir, "projects")
@@ -346,7 +346,7 @@ func TestWalk(t *testing.T) {
 
 func TestWalkWithGitMode(t *testing.T) {
 	tmpDir := t.TempDir()
-	cacheFile := filepath.Join(tmpDir, "cache.gob")
+	cacheFile := filepath.Join(tmpDir, "testCacheFile")
 
 	// Create git repo structure
 	repo1 := filepath.Join(tmpDir, "projects", "repo1")
@@ -387,7 +387,7 @@ func TestWalkWithGitMode(t *testing.T) {
 
 func TestWalkLive(t *testing.T) {
 	tmpDir := t.TempDir()
-	cacheFile := filepath.Join(tmpDir, "cache.gob")
+	cacheFile := filepath.Join(tmpDir, "testCacheFile")
 
 	// Create directory structure
 	projectDir := filepath.Join(tmpDir, "projects")
@@ -427,7 +427,7 @@ func TestWalkLive(t *testing.T) {
 
 func TestWalkLiveWithGitMode(t *testing.T) {
 	tmpDir := t.TempDir()
-	cacheFile := filepath.Join(tmpDir, "cache.gob")
+	cacheFile := filepath.Join(tmpDir, "testCacheFile")
 
 	// Create git repo
 	repo := filepath.Join(tmpDir, "myrepo")
