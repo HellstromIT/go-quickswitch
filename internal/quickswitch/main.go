@@ -13,6 +13,7 @@ import (
 type context struct {
 	version    string
 	configFile string
+	cacheFile  string
 	files      fileList
 }
 
@@ -49,7 +50,7 @@ func (a *addCmd) Run(ctx *context) error {
 	if err := ctx.files.saveConfigToFile(ctx.configFile); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
-	walk(ctx.files)
+	walk(ctx.files, ctx.cacheFile)
 	fmt.Printf("Directory %v added to search\n", a.Paths)
 	return nil
 }
@@ -61,7 +62,7 @@ func (r *rmCmd) Run(ctx *context) error {
 	if err := ctx.files.saveConfigToFile(ctx.configFile); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
-	walk(ctx.files)
+	walk(ctx.files, ctx.cacheFile)
 	fmt.Printf("Directory %v removed from search\n", r.Paths)
 	return nil
 }
@@ -72,7 +73,7 @@ func (v *versionCmd) Run(ctx *context) error {
 }
 
 func (r *runCmd) Run(ctx *context) error {
-	cache := readCacheFromFile()
+	cache := readCacheFromFile(ctx.cacheFile)
 
 	// Initialize list from cache
 	var list []string
@@ -89,7 +90,7 @@ func (r *runCmd) Run(ctx *context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		walkLive(ctx.files, &list, &mu, seen)
+		walkLive(ctx.files, &list, &mu, seen, ctx.cacheFile)
 	}()
 
 	// Show fuzzy finder with hot reload support
@@ -108,25 +109,36 @@ func Cli(v string) {
 		log.Debug("debug logging enabled")
 	}
 
-	configfile, err := getConfigFile("quickswitch/quickswitch.json")
+	configFile, err := getConfigFile("quickswitch/quickswitch.json")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	result, err := readConfigFromFile(configfile)
+	cacheFile, err := getConfigFile("quickswitch/cache.json")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	result, err := readConfigFromFile(configFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
 	if result.Created {
-		fmt.Printf("Created configuration at:\n   %v\n", configfile)
+		fmt.Printf("Created configuration at:\n   %v\n", configFile)
 		fmt.Println("Configuration created. Re-run command to search")
 		os.Exit(0)
 	}
 
-	err = ctx.Run(&context{version: v, configFile: configfile, files: result.FileList})
+	err = ctx.Run(&context{
+		version:    v,
+		configFile: configFile,
+		cacheFile:  cacheFile,
+		files:      result.FileList,
+	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)

@@ -131,12 +131,7 @@ func readConfigFromFile(filename string) (ConfigResult, error) {
 	return result, fmt.Errorf("failed to stat config file: %w", err)
 }
 
-func saveCacheToFile(m map[string]time.Time) error {
-	cachePath, err := getConfigFile("quickswitch/cache.json")
-	if err != nil {
-		return err
-	}
-
+func saveCacheToFile(cachePath string, m map[string]time.Time) error {
 	file, err := os.Create(cachePath)
 	if err != nil {
 		return fmt.Errorf("failed to create cache file: %w", err)
@@ -151,14 +146,8 @@ func saveCacheToFile(m map[string]time.Time) error {
 	return nil
 }
 
-func readCacheFromFile() map[string]time.Time {
+func readCacheFromFile(cachePath string) map[string]time.Time {
 	cache := make(map[string]time.Time)
-
-	cachePath, err := getConfigFile("quickswitch/cache.json")
-	if err != nil {
-		log.Error("failed to get cache path", "error", err)
-		return cache
-	}
 
 	file, err := os.Open(cachePath)
 	if err != nil {

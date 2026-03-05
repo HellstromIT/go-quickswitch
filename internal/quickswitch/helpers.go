@@ -108,7 +108,7 @@ func walkGitDir(p string, d directories, f *map[string]time.Time, depth int) dir
 	return d
 }
 
-func walk(f fileList) {
+func walk(f fileList, cachePath string) {
 	var d directories
 	d.name = "pseudo"
 	var childdir []directories
@@ -124,7 +124,7 @@ func walk(f fileList) {
 		}
 	}
 
-	if err := saveCacheToFile(flat); err != nil {
+	if err := saveCacheToFile(cachePath, flat); err != nil {
 		log.Error("failed to save cache", "error", err)
 	}
 	d.child = childdir
@@ -141,7 +141,7 @@ func getCwd() string {
 
 // walkLive walks directories and updates both the cache map and a live list.
 // The list is updated with mutex protection for hot reload support.
-func walkLive(f fileList, list *[]string, mu *sync.RWMutex, seen map[string]bool) {
+func walkLive(f fileList, list *[]string, mu *sync.RWMutex, seen map[string]bool, cachePath string) {
 	flat := make(map[string]time.Time)
 
 	for _, dir := range f.Directories {
@@ -153,7 +153,7 @@ func walkLive(f fileList, list *[]string, mu *sync.RWMutex, seen map[string]bool
 		}
 	}
 
-	if err := saveCacheToFile(flat); err != nil {
+	if err := saveCacheToFile(cachePath, flat); err != nil {
 		log.Error("failed to save cache", "error", err)
 	}
 }
