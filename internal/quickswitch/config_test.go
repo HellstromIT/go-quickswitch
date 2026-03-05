@@ -5,12 +5,23 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 const (
 	testPathProjects = "/home/user/projects"
 	testPathWork     = "/home/user/work"
+	testCacheFile    = "cache.gob"
+	testConfigFile   = "config.json"
 )
+
+// mustSaveConfig saves config and fails test on error
+func mustSaveConfig(t *testing.T, f *fileList, path string) {
+	t.Helper()
+	if err := f.saveConfigToFile(path); err != nil {
+		t.Fatalf("saveConfigToFile() error = %v", err)
+	}
+}
 
 func TestAddDirectory(t *testing.T) {
 	tests := []struct {
@@ -100,7 +111,7 @@ func TestAddDirectoryPreservesFlags(t *testing.T) {
 
 func TestSaveAndReadConfigFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config.json")
+	configFile := filepath.Join(tmpDir, testConfigFile)
 
 	// Create a fileList and save it
 	original := &fileList{
@@ -110,10 +121,7 @@ func TestSaveAndReadConfigFile(t *testing.T) {
 		},
 	}
 
-	err := original.saveConfigToFile(configFile)
-	if err != nil {
-		t.Fatalf("saveConfigToFile() error = %v", err)
-	}
+	mustSaveConfig(t, original, configFile)
 
 	// Verify file exists and is valid JSON
 	data, err := os.ReadFile(configFile)
@@ -144,9 +152,33 @@ func TestSaveAndReadConfigFile(t *testing.T) {
 	}
 }
 
+func TestRemoveDirectory(t *testing.T) {
+	f := &fileList{
+		Directories: []directoryConf{
+			{Directory: testPathProjects, Git: true, Depth: 0},
+			{Directory: testPathWork, Git: false, Depth: 2},
+		},
+	}
+
+	// Remove existing directory
+	err := f.removeDirectory(testPathWork)
+	if err != nil {
+		t.Errorf("removeDirectory() unexpected error: %v", err)
+	}
+	if len(f.Directories) != 1 {
+		t.Errorf("removeDirectory() resulted in %d directories, want 1", len(f.Directories))
+	}
+
+	// Try to remove non-existent directory
+	err = f.removeDirectory("/nonexistent/path")
+	if err == nil {
+		t.Error("removeDirectory() expected error for non-existent path")
+	}
+}
+
 func TestConfigFileFormat(t *testing.T) {
 	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config.json")
+	configFile := filepath.Join(tmpDir, testConfigFile)
 
 	f := &fileList{
 		Directories: []directoryConf{
@@ -154,10 +186,7 @@ func TestConfigFileFormat(t *testing.T) {
 		},
 	}
 
-	err := f.saveConfigToFile(configFile)
-	if err != nil {
-		t.Fatalf("saveConfigToFile() error = %v", err)
-	}
+	mustSaveConfig(t, f, configFile)
 
 	// Read raw content and verify it's properly indented
 	data, err := os.ReadFile(configFile)
@@ -179,6 +208,98 @@ func TestConfigFileFormat(t *testing.T) {
 	}
 	if !contains(content, `"Depth"`) {
 		t.Error("config should contain Depth key")
+	}
+}
+
+func TestSaveAndReadCacheFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	cacheFile := filepath.Join(tmpDir, testCacheFile)
+
+	// Create test data
+	original := map[string]time.Time{
+		"/home/user/project1": time.Now().Add(-1 * time.Hour),
+		"/home/user/project2": time.Now(),
+	}
+
+	// Save cache
+	err := saveCacheToFile(cacheFile, original)
+	if err != nil {
+		t.Fatalf("saveCacheToFile() error = %v", err)
+	}
+
+	// Read cache back
+	loaded := readCacheFromFile(cacheFile)
+
+	if len(loaded) != len(original) {
+		t.Errorf("readCacheFromFile() returned %d entries, want %d", len(loaded), len(original))
+	}
+
+	for path := range original {
+		if _, ok := loaded[path]; !ok {
+			t.Errorf("readCacheFromFile() missing path: %s", path)
+		}
+	}
+}
+
+func TestReadCacheFromNonExistentFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	cacheFile := filepath.Join(tmpDir, "nonexistent.gob")
+
+	// Should return empty map, not error
+	cache := readCacheFromFile(cacheFile)
+
+	if cache == nil {
+		t.Error("readCacheFromFile() returned nil, want empty map")
+	}
+	if len(cache) != 0 {
+		t.Errorf("readCacheFromFile() returned %d entries, want 0", len(cache))
+	}
+}
+
+func TestReadConfigFromFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	configFile := filepath.Join(tmpDir, testConfigFile)
+
+	// Create a config file
+	original := &fileList{
+		Directories: []directoryConf{
+			{Directory: testPathProjects, Git: true, Depth: 0},
+		},
+	}
+	mustSaveConfig(t, original, configFile)
+
+	// Read it back
+	result, err := readConfigFromFile(configFile)
+	if err != nil {
+		t.Fatalf("readConfigFromFile() error = %v", err)
+	}
+
+	if result.Created {
+		t.Error("readConfigFromFile() Created = true, want false")
+	}
+
+	if len(result.FileList.Directories) != 1 {
+		t.Errorf("readConfigFromFile() returned %d directories, want 1", len(result.FileList.Directories))
+	}
+}
+
+func TestReadConfigFromFileNotExist(t *testing.T) {
+	tmpDir := t.TempDir()
+	configFile := filepath.Join(tmpDir, "subdir", testConfigFile)
+
+	// Reading non-existent file should create it
+	result, err := readConfigFromFile(configFile)
+	if err != nil {
+		t.Fatalf("readConfigFromFile() error = %v", err)
+	}
+
+	if !result.Created {
+		t.Error("readConfigFromFile() Created = false, want true")
+	}
+
+	// Verify file was created
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		t.Error("readConfigFromFile() did not create config file")
 	}
 }
 

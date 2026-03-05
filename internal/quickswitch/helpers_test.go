@@ -305,3 +305,158 @@ func TestWalkLiveSkipsDuplicates(t *testing.T) {
 		t.Errorf("walkDirLive() should not add duplicates, got %d items", len(list))
 	}
 }
+
+func TestWalk(t *testing.T) {
+	tmpDir := t.TempDir()
+	cacheFile := filepath.Join(tmpDir, "testCacheFile")
+
+	// Create directory structure
+	projectDir := filepath.Join(tmpDir, "projects")
+	mustMkdirAll(t, filepath.Join(projectDir, "subdir1"))
+	mustMkdirAll(t, filepath.Join(projectDir, "subdir2"))
+
+	// Create fileList config
+	files := fileList{
+		Directories: []directoryConf{
+			{Directory: projectDir, Git: false, Depth: 1},
+		},
+	}
+
+	// Run walk
+	walk(files, cacheFile)
+
+	// Verify cache was created
+	cache := readCacheFromFile(cacheFile)
+	if len(cache) == 0 {
+		t.Error("walk() did not create cache entries")
+	}
+
+	// Should have projectDir, subdir1, subdir2
+	expectedDirs := []string{
+		projectDir,
+		filepath.Join(projectDir, "subdir1"),
+		filepath.Join(projectDir, "subdir2"),
+	}
+	for _, dir := range expectedDirs {
+		if _, ok := cache[dir]; !ok {
+			t.Errorf("walk() cache missing expected directory: %s", dir)
+		}
+	}
+}
+
+func TestWalkWithGitMode(t *testing.T) {
+	tmpDir := t.TempDir()
+	cacheFile := filepath.Join(tmpDir, "testCacheFile")
+
+	// Create git repo structure
+	repo1 := filepath.Join(tmpDir, "projects", "repo1")
+	mustMkdirAll(t, filepath.Join(repo1, ".git"))
+	// Add a subdir inside repo1 - should NOT be in cache (stops at .git)
+	mustMkdirAll(t, filepath.Join(repo1, "src"))
+
+	repo2 := filepath.Join(tmpDir, "projects", "repo2")
+	mustMkdirAll(t, filepath.Join(repo2, ".git"))
+
+	// Create fileList config with git mode
+	files := fileList{
+		Directories: []directoryConf{
+			{Directory: filepath.Join(tmpDir, "projects"), Git: true, Depth: 0},
+		},
+	}
+
+	// Run walk
+	walk(files, cacheFile)
+
+	// Verify cache
+	cache := readCacheFromFile(cacheFile)
+
+	// Should have repo1 and repo2
+	if _, ok := cache[repo1]; !ok {
+		t.Errorf("walk() cache missing git repo: %s", repo1)
+	}
+	if _, ok := cache[repo2]; !ok {
+		t.Errorf("walk() cache missing git repo: %s", repo2)
+	}
+
+	// repo1/src should NOT be in cache (walkGitDir stops at .git)
+	srcDir := filepath.Join(repo1, "src")
+	if _, ok := cache[srcDir]; ok {
+		t.Errorf("walk() should not recurse into git repo subdirs: %s", srcDir)
+	}
+}
+
+func TestWalkLive(t *testing.T) {
+	tmpDir := t.TempDir()
+	cacheFile := filepath.Join(tmpDir, "testCacheFile")
+
+	// Create directory structure
+	projectDir := filepath.Join(tmpDir, "projects")
+	mustMkdirAll(t, filepath.Join(projectDir, "subdir1"))
+
+	// Create fileList config
+	files := fileList{
+		Directories: []directoryConf{
+			{Directory: projectDir, Git: false, Depth: 1},
+		},
+	}
+
+	// Setup live walk state
+	var list []string
+	var mu sync.RWMutex
+	seen := make(map[string]bool)
+
+	// Run walkLive
+	walkLive(files, &list, &mu, seen, cacheFile)
+
+	// Verify list was populated
+	if len(list) == 0 {
+		t.Error("walkLive() did not populate list")
+	}
+
+	// Verify cache was created
+	cache := readCacheFromFile(cacheFile)
+	if len(cache) == 0 {
+		t.Error("walkLive() did not create cache entries")
+	}
+
+	// List and cache should have same entries
+	if len(list) != len(cache) {
+		t.Errorf("walkLive() list has %d entries, cache has %d", len(list), len(cache))
+	}
+}
+
+func TestWalkLiveWithGitMode(t *testing.T) {
+	tmpDir := t.TempDir()
+	cacheFile := filepath.Join(tmpDir, "testCacheFile")
+
+	// Create git repo
+	repo := filepath.Join(tmpDir, "myrepo")
+	mustMkdirAll(t, filepath.Join(repo, ".git"))
+
+	// Create fileList config with git mode
+	files := fileList{
+		Directories: []directoryConf{
+			{Directory: tmpDir, Git: true, Depth: 0},
+		},
+	}
+
+	// Setup live walk state
+	var list []string
+	var mu sync.RWMutex
+	seen := make(map[string]bool)
+
+	// Run walkLive
+	walkLive(files, &list, &mu, seen, cacheFile)
+
+	// Should find the repo
+	found := false
+	for _, path := range list {
+		if path == repo {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("walkLive() did not find git repo: %s", repo)
+	}
+}

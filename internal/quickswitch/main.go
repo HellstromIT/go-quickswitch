@@ -2,15 +2,18 @@ package quickswitch
 
 import (
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/HellstromIT/go-quickswitch/cmd/go-quickswitch/internal/fuzzy"
+	"github.com/HellstromIT/go-quickswitch/cmd/go-quickswitch/internal/log"
 	"github.com/alecthomas/kong"
 )
 
 type context struct {
 	version    string
 	configFile string
+	cacheFile  string
 	files      fileList
 }
 
@@ -35,25 +38,38 @@ type runCmd struct {
 }
 
 var cli struct {
+	Debug   bool       `short:"D" help:"Enable debug logging"`
 	Add     addCmd     `cmd help:"Add Paths to configuration file."`
 	Remove  rmCmd      `cmd help:"Remove Paths from configuration file."`
 	Run     runCmd     `cmd help:"Fuzzy search directories" default:"1"`
 	Version versionCmd `cmd help:"Print version."`
 }
 
+// fatal prints an error to stderr and exits
+func fatal(err error) {
+	fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+	os.Exit(1)
+}
+
 func (a *addCmd) Run(ctx *context) error {
 	ctx.files.addDirectory(a.Paths, a.Git, a.Depth)
-	ctx.files.saveConfigToFile(ctx.configFile)
-	walk(ctx.files)
-	fmt.Printf("Directory %v added to search", a.Paths)
+	if err := ctx.files.saveConfigToFile(ctx.configFile); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
+	}
+	walk(ctx.files, ctx.cacheFile)
+	fmt.Printf("Directory %v added to search\n", a.Paths)
 	return nil
 }
 
 func (r *rmCmd) Run(ctx *context) error {
-	ctx.files.removeDirectory(r.Paths)
-	ctx.files.saveConfigToFile(ctx.configFile)
-	walk(ctx.files)
-	fmt.Printf("Directory %v removed from search", r.Paths)
+	if err := ctx.files.removeDirectory(r.Paths); err != nil {
+		return err
+	}
+	if err := ctx.files.saveConfigToFile(ctx.configFile); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
+	}
+	walk(ctx.files, ctx.cacheFile)
+	fmt.Printf("Directory %v removed from search\n", r.Paths)
 	return nil
 }
 
@@ -63,7 +79,7 @@ func (v *versionCmd) Run(ctx *context) error {
 }
 
 func (r *runCmd) Run(ctx *context) error {
-	cache := readCacheFromFile()
+	cache := readCacheFromFile(ctx.cacheFile)
 
 	// Initialize list from cache
 	var list []string
@@ -80,7 +96,7 @@ func (r *runCmd) Run(ctx *context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		walkLive(ctx.files, &list, &mu, seen)
+		walkLive(ctx.files, &list, &mu, seen, ctx.cacheFile)
 	}()
 
 	// Show fuzzy finder with hot reload support
@@ -91,12 +107,42 @@ func (r *runCmd) Run(ctx *context) error {
 
 // Cli func
 func Cli(v string) {
-	configfile := getConfigFile("quickswitch/quickswitch.json")
-
-	files := readConfigFromFile(configfile)
-
 	ctx := kong.Parse(&cli)
 
-	err := ctx.Run(&context{version: v, configFile: configfile, files: files})
-	ctx.FatalIfErrorf(err)
+	// Enable debug logging if requested
+	if cli.Debug {
+		log.EnableDebug()
+		log.Debug("debug logging enabled")
+	}
+
+	configFile, err := GetConfigPath()
+	if err != nil {
+		fatal(err)
+	}
+
+	cacheFile, err := GetCachePath()
+	if err != nil {
+		fatal(err)
+	}
+
+	result, err := readConfigFromFile(configFile)
+	if err != nil {
+		fatal(err)
+	}
+
+	if result.Created {
+		fmt.Printf("Created configuration at:\n   %v\n", configFile)
+		fmt.Println("Configuration created. Re-run command to search")
+		os.Exit(0)
+	}
+
+	err = ctx.Run(&context{
+		version:    v,
+		configFile: configFile,
+		cacheFile:  cacheFile,
+		files:      result.FileList,
+	})
+	if err != nil {
+		fatal(err)
+	}
 }

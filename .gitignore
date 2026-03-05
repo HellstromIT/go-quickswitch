@@ -1,0 +1,5 @@
+# Compiled binary
+go-quickswitch
+
+# Test coverage
+coverage.out

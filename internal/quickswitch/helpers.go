@@ -1,11 +1,12 @@
 package quickswitch
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/HellstromIT/go-quickswitch/cmd/go-quickswitch/internal/log"
 )
 
 func findInDirectoryConf(slice []directoryConf, val string) (int, bool) {
@@ -107,44 +108,44 @@ func walkGitDir(p string, d directories, f *map[string]time.Time, depth int) dir
 	return d
 }
 
-func walk(f fileList) {
+func walk(f fileList, cachePath string) {
 	var d directories
 	d.name = "pseudo"
 	var childdir []directories
 	flat := make(map[string]time.Time)
 	for _, dir := range f.Directories {
+		log.Debug("walking directory", "path", dir.Directory, "git", dir.Git, "depth", dir.Depth)
 		if dir.Git {
 			var newChild directories
-
 			childdir = append(childdir, walkGitDir(dir.Directory, newChild, &flat, 0))
 		} else {
 			var newChild directories
-
 			childdir = append(childdir, walkDir(dir.Directory, newChild, &flat, 0, dir.Depth))
 		}
 	}
 
-	saveCacheToFile(flat)
+	if err := saveCacheToFile(cachePath, flat); err != nil {
+		log.Error("failed to save cache", "error", err)
+	}
 	d.child = childdir
-
-	return
 }
 
 func getCwd() string {
 	path, err := os.Getwd()
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Error("failed to get current directory", "error", err)
+		return "."
 	}
-
 	return path
 }
 
 // walkLive walks directories and updates both the cache map and a live list.
 // The list is updated with mutex protection for hot reload support.
-func walkLive(f fileList, list *[]string, mu *sync.RWMutex, seen map[string]bool) {
+func walkLive(f fileList, list *[]string, mu *sync.RWMutex, seen map[string]bool, cachePath string) {
 	flat := make(map[string]time.Time)
 
 	for _, dir := range f.Directories {
+		log.Debug("walking directory (live)", "path", dir.Directory, "git", dir.Git, "depth", dir.Depth)
 		if dir.Git {
 			walkGitDirLive(dir.Directory, &flat, list, mu, seen)
 		} else {
@@ -152,7 +153,9 @@ func walkLive(f fileList, list *[]string, mu *sync.RWMutex, seen map[string]bool
 		}
 	}
 
-	saveCacheToFile(flat)
+	if err := saveCacheToFile(cachePath, flat); err != nil {
+		log.Error("failed to save cache", "error", err)
+	}
 }
 
 func walkDirLive(p string, f *map[string]time.Time, depth int, maxDepth int, list *[]string, mu *sync.RWMutex, seen map[string]bool) {
