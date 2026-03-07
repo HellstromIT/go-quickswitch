@@ -1,6 +1,6 @@
 module github.com/HellstromIT/go-quickswitch/cmd/go-quickswitch
 
-go 1.21
+go 1.26
 
 require (
 	github.com/alecthomas/kong v1.14.0
