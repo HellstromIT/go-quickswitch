@@ -90,18 +90,17 @@ func (r *runCmd) Run(ctx *context) error {
 	}
 
 	var mu sync.RWMutex
-	var wg sync.WaitGroup
 
-	// Start walking directories in background with hot reload
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		walkLive(ctx.files, &list, &mu, seen, ctx.cacheFile)
-	}()
+	// Crawl directories in the background so the fuzzy finder hot-reloads as
+	// repositories are discovered. We deliberately do not wait for the crawl
+	// to finish: once the user picks an entry the command returns
+	// immediately. The crawl persists its results to the cache as it goes
+	// (see saveCacheToFile), so an unfinished crawl simply leaves the cache
+	// as it was rather than blocking the user.
+	go walkLive(ctx.files, &list, &mu, seen, ctx.cacheFile)
 
 	// Show fuzzy finder with hot reload support
 	fmt.Println(fuzzy.GetDirectoryLive(&list, &mu, getCwd()))
-	wg.Wait()
 	return nil
 }
 

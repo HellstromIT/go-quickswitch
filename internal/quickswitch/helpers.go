@@ -52,7 +52,9 @@ func walkDir(p string, d directories, f *map[string]time.Time, depth int, maxDep
 			return d
 		}
 		for _, v := range names {
-			info, err := os.Stat(filepath.Join(p, v))
+			// Lstat, not Stat: do not follow symlinks. A symlinked
+			// directory (e.g. a Nix "result" link) must not be crawled.
+			info, err := os.Lstat(filepath.Join(p, v))
 			if err != nil {
 				return d
 			}
@@ -108,7 +110,9 @@ func walkGitDir(p string, d directories, f *map[string]time.Time, depth, maxDept
 				continue
 			}
 			childPath := filepath.Join(p, v)
-			info, err := os.Stat(childPath)
+			// Lstat, not Stat: do not follow symlinks. A symlinked
+			// directory (e.g. a Nix "result" link) must not be crawled.
+			info, err := os.Lstat(childPath)
 			if err != nil {
 				continue
 			}
@@ -205,7 +209,9 @@ func walkDirLive(p string, f *map[string]time.Time, depth int, maxDepth int, lis
 
 	for _, v := range names {
 		childPath := filepath.Join(p, v)
-		info, err := os.Stat(childPath)
+		// Lstat, not Stat: do not follow symlinks. A symlinked
+		// directory (e.g. a Nix "result" link) must not be crawled.
+		info, err := os.Lstat(childPath)
 		if err != nil {
 			continue
 		}
@@ -253,7 +259,9 @@ func walkGitDirLive(p string, f *map[string]time.Time, depth, maxDepth int, list
 			continue
 		}
 		childPath := filepath.Join(p, v)
-		info, err := os.Stat(childPath)
+		// Lstat, not Stat: do not follow symlinks. A symlinked
+		// directory (e.g. a Nix "result" link) must not be crawled.
+		info, err := os.Lstat(childPath)
 		if err != nil {
 			continue
 		}

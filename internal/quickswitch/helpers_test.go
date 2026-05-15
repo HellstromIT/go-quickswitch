@@ -343,6 +343,54 @@ func TestWalkGitDirLiveDepthLimit(t *testing.T) {
 	}
 }
 
+func TestWalkGitDirDoesNotFollowSymlinks(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// A real repo the crawler must not reach by following a symlink.
+	target := filepath.Join(tmpDir, "target")
+	mustMkdirAll(t, filepath.Join(target, "repo", ".git"))
+
+	// A non-git directory containing a symlink to the tree above, mimicking
+	// a Nix "result" link that points into the store.
+	project := filepath.Join(tmpDir, "project")
+	mustMkdirAll(t, project)
+	if err := os.Symlink(target, filepath.Join(project, "result")); err != nil {
+		t.Fatalf("failed to create symlink: %v", err)
+	}
+
+	flat := make(map[string]time.Time)
+	var d directories
+	walkGitDir(project, d, &flat, 0, 0)
+
+	if len(flat) != 0 {
+		t.Errorf("walkGitDir() followed a symlink, cached %d entries: %v", len(flat), flat)
+	}
+}
+
+func TestWalkGitDirLiveDoesNotFollowSymlinks(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	target := filepath.Join(tmpDir, "target")
+	mustMkdirAll(t, filepath.Join(target, "repo", ".git"))
+
+	project := filepath.Join(tmpDir, "project")
+	mustMkdirAll(t, project)
+	if err := os.Symlink(target, filepath.Join(project, "result")); err != nil {
+		t.Fatalf("failed to create symlink: %v", err)
+	}
+
+	var list []string
+	var mu sync.RWMutex
+	seen := make(map[string]bool)
+	flat := make(map[string]time.Time)
+
+	walkGitDirLive(project, &flat, 0, 0, &list, &mu, seen)
+
+	if len(list) != 0 {
+		t.Errorf("walkGitDirLive() followed a symlink, found %d entries: %v", len(list), list)
+	}
+}
+
 func TestWalkLiveSkipsDuplicates(t *testing.T) {
 	tmpDir := t.TempDir()
 

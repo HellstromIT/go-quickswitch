@@ -147,16 +147,27 @@ func readConfigFromFile(filename string) (ConfigResult, error) {
 	return result, fmt.Errorf("failed to stat config file: %w", err)
 }
 
+// saveCacheToFile writes the cache atomically: it encodes to a temp file in
+// the same directory and renames it into place. This way a process exiting
+// mid-write (the background crawl is no longer waited on) can never leave a
+// truncated cache file behind.
 func saveCacheToFile(cachePath string, m map[string]time.Time) error {
-	file, err := os.Create(cachePath)
+	tmp, err := os.CreateTemp(filepath.Dir(cachePath), "cache-*.tmp")
 	if err != nil {
-		return fmt.Errorf("failed to create cache file: %w", err)
+		return fmt.Errorf("failed to create cache temp file: %w", err)
 	}
-	defer file.Close()
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName) // no-op once the rename below succeeds
 
-	e := gob.NewEncoder(file)
-	if err := e.Encode(m); err != nil {
+	if err := gob.NewEncoder(tmp).Encode(m); err != nil {
+		tmp.Close()
 		return fmt.Errorf("failed to encode cache: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("failed to close cache temp file: %w", err)
+	}
+	if err := os.Rename(tmpName, cachePath); err != nil {
+		return fmt.Errorf("failed to replace cache file: %w", err)
 	}
 	log.Debug("saved cache to file", "path", cachePath, "entries", len(m))
 	return nil
