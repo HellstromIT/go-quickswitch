@@ -3,11 +3,20 @@ package quickswitch
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/HellstromIT/go-quickswitch/cmd/go-quickswitch/internal/log"
 )
+
+// isHidden reports whether a directory entry should be skipped while crawling.
+// Hidden directories (names beginning with ".", e.g. .git, .devenv, .cache)
+// never hold a top-level git repository we want and can be pathologically
+// large, so the crawler does not descend into them.
+func isHidden(name string) bool {
+	return strings.HasPrefix(name, ".")
+}
 
 func findInDirectoryConf(slice []directoryConf, val string) (int, bool) {
 	for i, item := range slice {
@@ -64,7 +73,12 @@ func walkDir(p string, d directories, f *map[string]time.Time, depth int, maxDep
 	return d
 }
 
-func walkGitDir(p string, d directories, f *map[string]time.Time, depth int) directories {
+// walkGitDir crawls p looking for git repositories. A directory containing a
+// .git entry is recorded and not descended into. Non-git directories are
+// descended into (but never recorded themselves), skipping hidden directories
+// such as .devenv that can never be the repo we want. maxDepth caps how deep
+// the crawl descends; maxDepth <= 0 means unlimited.
+func walkGitDir(p string, d directories, f *map[string]time.Time, depth, maxDepth int) directories {
 
 	d.name = p
 	d.depth = depth
@@ -78,32 +92,37 @@ func walkGitDir(p string, d directories, f *map[string]time.Time, depth int) dir
 	if err != nil {
 		return d
 	}
-	for _, v := range names {
-		if v == ".git" {
-			d.searched = true
-			d.time = time.Now()
-			(*f)[p] = time.Now()
-			return d
-		}
-	}
-	for _, v := range names {
-		info, err := os.Stat(filepath.Join(p, v))
-		if err != nil {
-			return d
-		}
-		if !info.IsDir() {
-			continue
-		}
-		childPath := filepath.Join(p, v)
 
-		var newChild directories
-		childdir = append(childdir, walkGitDir(childPath, newChild, f, d.depth+1))
+	// A directory containing .git is a repo: record it and stop descending.
+	if _, isRepo := findInSlice(names, ".git"); isRepo {
+		d.searched = true
+		d.time = time.Now()
+		(*f)[p] = time.Now()
+		return d
+	}
+
+	// Not a repo: descend into visible subdirectories, honoring the depth cap.
+	if maxDepth <= 0 || depth < maxDepth {
+		for _, v := range names {
+			if isHidden(v) {
+				continue
+			}
+			childPath := filepath.Join(p, v)
+			info, err := os.Stat(childPath)
+			if err != nil {
+				continue
+			}
+			if !info.IsDir() {
+				continue
+			}
+			var newChild directories
+			childdir = append(childdir, walkGitDir(childPath, newChild, f, depth+1, maxDepth))
+		}
 	}
 
 	d.child = childdir
 	d.searched = true
 	d.time = time.Now()
-	(*f)[p] = time.Now()
 
 	return d
 }
@@ -117,7 +136,7 @@ func walk(f fileList, cachePath string) {
 		log.Debug("walking directory", "path", dir.Directory, "git", dir.Git, "depth", dir.Depth)
 		if dir.Git {
 			var newChild directories
-			childdir = append(childdir, walkGitDir(dir.Directory, newChild, &flat, 0))
+			childdir = append(childdir, walkGitDir(dir.Directory, newChild, &flat, 0, dir.Depth))
 		} else {
 			var newChild directories
 			childdir = append(childdir, walkDir(dir.Directory, newChild, &flat, 0, dir.Depth))
@@ -147,7 +166,7 @@ func walkLive(f fileList, list *[]string, mu *sync.RWMutex, seen map[string]bool
 	for _, dir := range f.Directories {
 		log.Debug("walking directory (live)", "path", dir.Directory, "git", dir.Git, "depth", dir.Depth)
 		if dir.Git {
-			walkGitDirLive(dir.Directory, &flat, list, mu, seen)
+			walkGitDirLive(dir.Directory, &flat, 0, dir.Depth, list, mu, seen)
 		} else {
 			walkDirLive(dir.Directory, &flat, 0, dir.Depth, list, mu, seen)
 		}
@@ -196,7 +215,11 @@ func walkDirLive(p string, f *map[string]time.Time, depth int, maxDepth int, lis
 	}
 }
 
-func walkGitDirLive(p string, f *map[string]time.Time, list *[]string, mu *sync.RWMutex, seen map[string]bool) {
+// walkGitDirLive crawls p for git repositories, updating the live list as it
+// goes. A directory containing .git is recorded and not descended into.
+// Non-git directories are descended into (skipping hidden directories) up to
+// maxDepth levels; maxDepth <= 0 means unlimited.
+func walkGitDirLive(p string, f *map[string]time.Time, depth, maxDepth int, list *[]string, mu *sync.RWMutex, seen map[string]bool) {
 	file, err := os.Open(p)
 	if err != nil {
 		return
@@ -208,30 +231,34 @@ func walkGitDirLive(p string, f *map[string]time.Time, list *[]string, mu *sync.
 		return
 	}
 
-	// Check if this is a git repo
-	for _, v := range names {
-		if v == ".git" {
-			// Found a git repo - add it and stop recursing
-			mu.Lock()
-			if !seen[p] {
-				seen[p] = true
-				*list = append(*list, p)
-			}
-			mu.Unlock()
-			(*f)[p] = time.Now()
-			return
+	// A directory containing .git is a repo: record it and stop descending.
+	if _, isRepo := findInSlice(names, ".git"); isRepo {
+		mu.Lock()
+		if !seen[p] {
+			seen[p] = true
+			*list = append(*list, p)
 		}
+		mu.Unlock()
+		(*f)[p] = time.Now()
+		return
 	}
 
-	// Not a git repo, recurse into subdirectories
+	// Not a repo: descend into visible subdirectories, honoring the depth cap.
+	if maxDepth > 0 && depth >= maxDepth {
+		return
+	}
+
 	for _, v := range names {
+		if isHidden(v) {
+			continue
+		}
 		childPath := filepath.Join(p, v)
 		info, err := os.Stat(childPath)
 		if err != nil {
 			continue
 		}
 		if info.IsDir() {
-			walkGitDirLive(childPath, f, list, mu, seen)
+			walkGitDirLive(childPath, f, depth+1, maxDepth, list, mu, seen)
 		}
 	}
 }

@@ -3,6 +3,7 @@ package quickswitch
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -200,7 +201,7 @@ func TestWalkGitDir(t *testing.T) {
 
 	flat := make(map[string]time.Time)
 	var d directories
-	walkGitDir(tmpDir, d, &flat, 0)
+	walkGitDir(tmpDir, d, &flat, 0, 0)
 
 	// Should find repo1 and repo2, but not tmpDir, notrepo, nested, or subdir
 	expectedRepos := []string{repo1, repo2}
@@ -270,7 +271,7 @@ func TestWalkGitDirLive(t *testing.T) {
 	seen := make(map[string]bool)
 	flat := make(map[string]time.Time)
 
-	walkGitDirLive(tmpDir, &flat, &list, &mu, seen)
+	walkGitDirLive(tmpDir, &flat, 0, 0, &list, &mu, seen)
 
 	// Should find repo1 and repo2
 	expectedRepos := []string{repo1, repo2}
@@ -283,6 +284,62 @@ func TestWalkGitDirLive(t *testing.T) {
 		if !seen[repo] {
 			t.Errorf("walkGitDirLive() missing expected repo: %s", repo)
 		}
+	}
+}
+
+func TestWalkGitDirSkipsHiddenDirs(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// A non-git directory containing a large hidden subtree (e.g. a Nix
+	// .devenv profile). The crawler must not descend into it.
+	hidden := filepath.Join(tmpDir, "project", ".devenv", "deep", "deeper")
+	mustMkdirAll(t, hidden)
+
+	// A real repo nested next to the hidden dir.
+	repo := filepath.Join(tmpDir, "project", "repo")
+	mustMkdirAll(t, filepath.Join(repo, ".git"))
+
+	flat := make(map[string]time.Time)
+	var d directories
+	walkGitDir(tmpDir, d, &flat, 0, 0)
+
+	if _, ok := flat[repo]; !ok {
+		t.Errorf("walkGitDir() missing expected repo: %s", repo)
+	}
+	for path := range flat {
+		if strings.Contains(path, ".devenv") {
+			t.Errorf("walkGitDir() descended into hidden dir: %s", path)
+		}
+	}
+	// Only the repo should be cached - non-git dirs are not recorded.
+	if len(flat) != 1 {
+		t.Errorf("walkGitDir() cached %d entries, want 1 (only the repo)", len(flat))
+	}
+}
+
+func TestWalkGitDirLiveDepthLimit(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Repo at depth 1 - within a maxDepth of 1.
+	shallow := filepath.Join(tmpDir, "shallow")
+	mustMkdirAll(t, filepath.Join(shallow, ".git"))
+
+	// Repo at depth 3 - beyond a maxDepth of 1.
+	deep := filepath.Join(tmpDir, "a", "b", "deep")
+	mustMkdirAll(t, filepath.Join(deep, ".git"))
+
+	var list []string
+	var mu sync.RWMutex
+	seen := make(map[string]bool)
+	flat := make(map[string]time.Time)
+
+	walkGitDirLive(tmpDir, &flat, 0, 1, &list, &mu, seen)
+
+	if !seen[shallow] {
+		t.Errorf("walkGitDirLive() missing repo within depth limit: %s", shallow)
+	}
+	if seen[deep] {
+		t.Errorf("walkGitDirLive() found repo beyond depth limit: %s", deep)
 	}
 }
 
