@@ -18,7 +18,7 @@ type context struct {
 }
 
 type addCmdSub struct {
-	Depth int  `short:"d" help:"How deep the crawler should traverse directory (Only relevant if git is unset). Default: 0"`
+	Depth int  `short:"d" help:"Maximum directory depth to crawl. 0 means unlimited. Default: 0"`
 	Git   bool `short:"g" optional help:"If set crawler will look for all subdirs with a .git folder. Default: false "`
 }
 
